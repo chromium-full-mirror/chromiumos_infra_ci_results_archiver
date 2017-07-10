@@ -1,0 +1,21 @@
+#!/bin/bash
+# Copyright 2017 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# This script will start cros_lint via venv python to set correct PYTHONPATH
+# for our third-party dependencies.
+
+set -eu
+
+readonly bin_dir=$(readlink -f -- "$(dirname -- "$0")")
+
+if (( $# == 0 )); then
+    echo "No file specified. Linting all files managed by git." >&2
+    cd "${bin_dir}/.."
+    git ls-files | xargs -d '\n' bin/python_venv ../../chromite/bin/cros lint
+    exit 0
+fi
+
+exec "${bin_dir}/python_venv" "${bin_dir}/../../../chromite/bin/cros" lint \
+     "$@"

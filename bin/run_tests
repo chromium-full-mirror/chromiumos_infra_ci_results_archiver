@@ -1,0 +1,24 @@
+#!/bin/bash
+# Copyright 2017 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# Run unit tests.
+set -eu
+
+readonly bin_dir="$(readlink -e -- "$(dirname -- "$0")")"
+
+cd "${bin_dir}/.."
+
+find . -name "*.pyc" -delete
+
+verbose_opts=""
+while getopts v name; do
+    case $name in
+        v) verbose_opts="-v";;
+        ?) echo "Usage: $0: [-v]" >&2; exit 2;;
+    esac
+done
+
+exec "${bin_dir}/python_venv" -m unittest discover ${verbose_opts} \
+     -s venv/ci_results_archiver/ -p '*test.py'
