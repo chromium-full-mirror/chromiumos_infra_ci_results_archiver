@@ -4,6 +4,10 @@ google-cloud-storage==1.2.0
 pytz==2017.2
 PyYAML==3.12
 
+# yapf
+yapf==0.16.2
+futures==3.0.5  # for parallelism support
+
 # chromite dependencies as of 2017-07-05
 enum34==1.1.6
 funcsigs==1.0.2

@@ -1,0 +1,50 @@
+#!/bin/bash
+# Copyright 2017 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# This script will run yapf to format Python files.
+set -eu
+
+readonly bin_dir="$(readlink -e -- "$(dirname -- "$0")")"
+
+usage() {
+    echo "Usage: $0 [-i] files..." >&2
+}
+
+run_yapf() {
+    exec "${bin_dir}/python_venv" -m yapf --recursive "$@"
+}
+
+mode=diff
+while getopts i name; do
+    case $name in
+        i) mode=inplace;;
+        ?) usage; exit 2;;
+    esac
+done
+
+if (( $# == 0 )); then
+    usage
+    exit 2
+fi
+
+case $mode in
+    diff)
+        readonly diff=$(run_yapf --diff "$@")
+        if [[ -n "${diff}" ]]; then
+            echo "ERROR: Style diff found."
+            echo "${diff}"
+            echo
+            echo "INFO: Run the following command to apply the style diff:"
+            echo "\$ $0 -i $@"
+            exit 1
+        fi
+        exit 0
+        ;;
+    inplace)
+        run_yapf --in-place "$@"
+        ;;
+esac
+
+exit 1  # must not reach here
