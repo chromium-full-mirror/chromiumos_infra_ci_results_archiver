@@ -23,10 +23,12 @@ while getopts i name; do
         ?) usage; exit 2;;
     esac
 done
+shift $((OPTIND - 1))
 
 if (( $# == 0 )); then
-    usage
-    exit 2
+    echo "No file specified. Checking all files managed by git." >&2
+    cd "${bin_dir}/.."
+    set -- $(git ls-files | grep '\.py$')
 fi
 
 case $mode in
