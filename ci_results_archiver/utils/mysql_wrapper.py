@@ -83,7 +83,7 @@ class MySQLWrapper(object):
 
     start_time = time.time()
     cursor.execute(query, params)
-    rows = cursor.fetchall()
+    rows = list(cursor.fetchall())
     end_time = time.time()
 
     logging.info('MySQL query successfully finished in %.3fs; got %d rows.',
