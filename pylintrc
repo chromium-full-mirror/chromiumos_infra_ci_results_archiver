@@ -58,8 +58,9 @@ extension-pkg-whitelist=datetime
 # R0904: Too many public methods
 # R0921: Abstract class not referenced.
 # R0922: Abstract class is only referenced N times.
+# W0511: TODO comment
 disable=I0011,I0012,R0201,R0902,R0903,R0911,R0912,R0913,R0914,R0915,R0904,R0921,
-        R0922
+        R0922,W0511
 
 
 [REPORTS]
