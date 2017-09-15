@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import datetime
 import unittest
 
 import mock
@@ -70,7 +71,8 @@ class MySQLWrapperTestCase(unittest.TestCase):
     # Asia/Tokyo is UTC+9.
     self.assertEqual(
         self._wrapper._ConvertDatetime('2017-04-01 12:00:00'),
-        1491015600)  # 2017-04-01 03:00:00 UTC
+        # 2017-04-01 03:00:00 UTC
+        datetime.datetime.fromtimestamp(1491015600, pytz.utc))
     self.assertEqual(self._wrapper._ConvertDatetime('NULL'), None)
 
   def testConvertTimestamp(self):
@@ -78,5 +80,6 @@ class MySQLWrapperTestCase(unittest.TestCase):
     # pylint: disable=protected-access
     self.assertEqual(
         self._wrapper._ConvertTimestamp('2017-04-01 12:00:00'),
-        1491048000)  # 2017-04-01 12:00:00 UTC
+        # 2017-04-01 12:00:00 UTC
+        datetime.datetime.fromtimestamp(1491048000, pytz.utc))
     self.assertEqual(self._wrapper._ConvertDatetime('NULL'), None)

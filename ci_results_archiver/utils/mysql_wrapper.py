@@ -7,7 +7,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import calendar
 import logging
 import time
 
@@ -15,6 +14,7 @@ import MySQLdb
 import MySQLdb.constants
 import MySQLdb.converters
 import MySQLdb.cursors
+import pytz
 
 _DEFAULT_DATETIME_CONVERTER = MySQLdb.converters.conversions[
     MySQLdb.constants.FIELD_TYPE.DATETIME]
@@ -26,9 +26,9 @@ class MySQLWrapper(object):
   """Simple wrapper of MySQLdb.
 
   An important feature of this wrapper is DATETIME conversion. When MySQLdb
-  returns DATETIME values, it converts them to numeric timestamp values
+  returns DATETIME values, it converts them to UTC datetime objects
   according to timezone given in the constructor. TIMESTAMP values are also
-  converted to numeric timestamp values.
+  converted to UTC datetime objects.
   """
 
   def __init__(self, hostname, username, password, database, timezone):
@@ -91,24 +91,24 @@ class MySQLWrapper(object):
     return rows
 
   def _ConvertDatetime(self, mysql_value):
-    """Converts MySQL DATETIME value to numeric timestamp value.
+    """Converts MySQL DATETIME value to UTC datetime object.
 
     Args:
       mysql_value: MySQL DATETIME value.
 
     Returns:
-      Numeric timestamp value.
+      UTC datetime object.
     """
     # First, use the default converter to convert the MySQL value to
     # datetime.
-    naive_datetime = _DEFAULT_DATETIME_CONVERTER(mysql_value)
-    if naive_datetime is None:
+    naive_local_datetime = _DEFAULT_DATETIME_CONVERTER(mysql_value)
+    if naive_local_datetime is None:
       return None
-    local_datetime = self._timezone.localize(naive_datetime)
-    return calendar.timegm(local_datetime.utctimetuple())
+    aware_local_datetime = self._timezone.localize(naive_local_datetime)
+    return aware_local_datetime.astimezone(pytz.utc)
 
   def _ConvertTimestamp(self, mysql_value):
-    """Converts MySQL TIMESTAMP value to numeric timestamp value.
+    """Converts MySQL TIMESTAMP value to UTC datetime object.
 
     Args:
       mysql_value: MySQL TIMESTAMP value.
@@ -118,7 +118,7 @@ class MySQLWrapper(object):
     """
     # First, use the default converter to convert the MySQL value to
     # datetime.
-    utc_datetime = _DEFAULT_TIMESTAMP_CONVERTER(mysql_value)
-    if utc_datetime is None:
+    naive_utc_datetime = _DEFAULT_TIMESTAMP_CONVERTER(mysql_value)
+    if naive_utc_datetime is None:
       return None
-    return calendar.timegm(utc_datetime.timetuple())
+    return pytz.utc.localize(naive_utc_datetime)

@@ -7,14 +7,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import datetime
 import json
 import unittest
 
 from google.cloud import bigquery  # pylint: disable=import-error,no-name-in-module
 from google.cloud import storage  # pylint: disable=import-error,no-name-in-module
 import mock
+import pytz
 
 from ci_results_archiver.utils import bigquery_wrapper
+
+PST = pytz.timezone('US/Pacific')
 
 
 class BigQueryWrapperTestCase(unittest.TestCase):
@@ -127,11 +131,13 @@ class BigQueryWrapperTestCase(unittest.TestCase):
     entries = [
         {
             'id': 1,
-            'fruit': 'apple'
+            'fruit': 'apple',
+            'time': pytz.utc.localize(datetime.datetime(2017, 9, 15, 12, 3, 4)),
         },
         {
             'id': 2,
-            'fruit': 'banana'
+            'fruit': 'banana',
+            'time': PST.localize(datetime.datetime(2017, 9, 15, 5, 3, 4)),
         },
     ]
     self._wrapper.LoadEntries('table', schema, entries, job_name='job_name')
@@ -139,9 +145,18 @@ class BigQueryWrapperTestCase(unittest.TestCase):
     self._bucket.blob.assert_called_once_with(
         'loads/dataset/job_name/data.json')
     self.assertEqual(len(uploaded_contents), 1)
-    self.assertEqual(
-        [json.loads(line)
-         for line in uploaded_contents[0].splitlines()], entries)
+    self.assertEqual([
+        {
+            u'id': 1,
+            u'fruit': u'apple',
+            u'time': u'2017-09-15 12:03:04 UTC',
+        },
+        {
+            u'id': 2,
+            u'fruit': u'banana',
+            u'time': u'2017-09-15 12:03:04 UTC',
+        },
+    ], [json.loads(line) for line in uploaded_contents[0].splitlines()])
 
     self._bigquery_client.load_table_from_storage.assert_called_once_with(
         'job_name',

@@ -13,6 +13,8 @@ import logging
 import StringIO
 import time
 
+import pytz
+
 
 class BigQueryError(Exception):
   """Represents errors on BigQuery backends."""
@@ -216,9 +218,29 @@ def _SerializeToNewlineDelimitedJson(entries):
   """
   buf = StringIO.StringIO()
   for entry in entries:
-    json.dump(entry, buf, separators=(',', ':'))
+    json.dump(entry, buf, separators=(',', ':'), default=_CustomEncoder)
     buf.write('\n')
   return buf.getvalue().encode('utf-8')
+
+
+def _CustomEncoder(value):
+  """Custom JSON value encoder to format timezone-aware datetime values.
+
+  Args:
+    value: Any object.
+
+  Returns:
+    A serialized string.
+
+  Raises:
+    TypeError: On failure.
+  """
+  if isinstance(value, datetime.datetime):
+    if value.tzinfo is None:
+      raise TypeError('Naive datetime can not be serialized')
+    utc_datetime = value.astimezone(pytz.utc)
+    return utc_datetime.strftime('%Y-%m-%d %H:%M:%S UTC')
+  raise TypeError('Could not encode to JSON: %r' % value)
 
 
 def _GetPaginatedResultRows(results):
