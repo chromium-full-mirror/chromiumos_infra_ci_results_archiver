@@ -52,7 +52,8 @@ class BigQueryWrapperTestCase(unittest.TestCase):
     datasets[4].name = 'cinnamon'
     self._dataset.list_tables.return_value = datasets
 
-    self.assertEqual(['apple', 'apricot'], self._wrapper.ListTableNames('a'))
+    self.assertEqual(['apple', 'apricot', 'banana', 'cherry', 'cinnamon'],
+                     self._wrapper.ListTableNames())
 
   def testRunQuery(self):
     """RunQuery() works in a normal case."""

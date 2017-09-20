@@ -60,11 +60,8 @@ class BigQueryWrapper(object):
     """
     return self._dataset.table(table_name).exists()
 
-  def ListTableNames(self, prefix):
-    """Retrieves a list of table names with specified prefix in the dataset.
-
-    Args:
-      prefix: A prefix string of table names.
+  def ListTableNames(self):
+    """Retrieves a list of table names.
 
     Returns:
       A sorted list of table names.
@@ -72,9 +69,7 @@ class BigQueryWrapper(object):
     Raises:
       google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
     """
-    all_tables = self._dataset.list_tables()
-    return sorted(
-        table.name for table in all_tables if table.name.startswith(prefix))
+    return sorted(table.name for table in self._dataset.list_tables())
 
   def RunQuery(self, query, timeout_seconds, description, params=()):
     """Runs a query.
