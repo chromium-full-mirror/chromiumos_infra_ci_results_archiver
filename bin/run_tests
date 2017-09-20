@@ -12,13 +12,4 @@ cd "${bin_dir}/.."
 
 find . -name "*.pyc" -delete
 
-verbose_opts=""
-while getopts v name; do
-    case $name in
-        v) verbose_opts="-v";;
-        ?) echo "Usage: $0: [-v]" >&2; exit 2;;
-    esac
-done
-
-exec "${bin_dir}/python_venv" -m unittest discover ${verbose_opts} \
-     -s venv/ci_results_archiver/ -p '*test.py'
+exec "${bin_dir}/python_venv" -m pytest "$@"

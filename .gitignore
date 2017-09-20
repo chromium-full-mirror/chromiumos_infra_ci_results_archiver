@@ -7,3 +7,6 @@
 *.rej
 *.swp
 .DS_Store
+
+/.cache/
+/.coverage
