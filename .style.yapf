@@ -1,2 +1,5 @@
 [style]
 based_on_style = chromium
+allow_split_before_dict_value = false
+each_dict_entry_on_separate_line = false
+indent_dictionary_value = false

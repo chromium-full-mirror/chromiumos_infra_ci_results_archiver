@@ -179,14 +179,8 @@ class BigQueryWrapperTestCase(unittest.TestCase):
 
     schema = object()
     entries = [
-        {
-            'id': 1,
-            'fruit': 'apple'
-        },
-        {
-            'id': 2,
-            'fruit': 'banana'
-        },
+        {'id': 1, 'fruit': 'apple'},
+        {'id': 2, 'fruit': 'banana'},
     ]
     with self.assertRaises(bigquery_wrapper.BigQueryError):
       self._wrapper.LoadEntries('table', schema, entries, job_name='job_name')

@@ -40,14 +40,8 @@ class MySQLWrapperTestCase(unittest.TestCase):
   def testRunQuery(self):
     """RunQuery() works."""
     self._cursor.fetchall.return_value = [
-        {
-            'id': 1,
-            'fruit': 'apple'
-        },
-        {
-            'id': 2,
-            'fruit': 'banana'
-        },
+        {'id': 1, 'fruit': 'apple'},
+        {'id': 2, 'fruit': 'banana'},
     ]
 
     rows = self._wrapper.RunQuery('query', 'description', params=('a', 'b'))
@@ -55,14 +49,8 @@ class MySQLWrapperTestCase(unittest.TestCase):
     self._conn.cursor.assert_called_with(MySQLdb.cursors.DictCursor)
     self._cursor.execute.assert_called_with('query', ('a', 'b'))
     self.assertEqual(rows, [
-        {
-            'id': 1,
-            'fruit': 'apple'
-        },
-        {
-            'id': 2,
-            'fruit': 'banana'
-        },
+        {'id': 1, 'fruit': 'apple'},
+        {'id': 2, 'fruit': 'banana'},
     ])
 
   def testConvertDatetime(self):
