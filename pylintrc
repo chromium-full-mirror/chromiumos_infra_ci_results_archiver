@@ -48,6 +48,7 @@ extension-pkg-whitelist=datetime
 # I0011: Locally disabling warning.
 # I0012: Locally enabling warning.
 # R0201: Method could be a function
+# R0901: Too many ancestors (N/7)
 # R0902: Too many instance attributes (N/7)
 # R0903: Too few public methods (N/2)
 # R0911: Too many return statements (N/6)
@@ -59,8 +60,8 @@ extension-pkg-whitelist=datetime
 # R0921: Abstract class not referenced.
 # R0922: Abstract class is only referenced N times.
 # W0511: TODO comment
-disable=I0011,I0012,R0201,R0902,R0903,R0911,R0912,R0913,R0914,R0915,R0904,R0921,
-        R0922,W0511
+disable=I0011,I0012,R0201,R0901,R0902,R0903,R0911,R0912,R0913,R0914,R0915,R0904,
+        R0921,R0922,W0511
 
 
 [REPORTS]
