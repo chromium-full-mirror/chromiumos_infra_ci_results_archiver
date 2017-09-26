@@ -20,6 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import contextlib
 import datetime
 import logging
 import multiprocessing
@@ -29,14 +30,19 @@ import sys
 from apscheduler.executors import pool as pool_executors
 from apscheduler.schedulers import blocking as blocking_scheduler
 from apscheduler.triggers import interval as interval_triggers
+from chromite.lib import metrics
+from chromite.lib import ts_mon_config
 import subprocess32
 
 from ci_results_archiver import archive_builder_factory
 from ci_results_archiver import config_loader
+from ci_results_archiver import constants
 from ci_results_archiver import table_types
 from ci_results_archiver.utils import text_util
 
 import pytz
+
+_TS_MON_SERVICE_NAME = 'ci_results_archiver'
 
 
 def _DaemonMain(run_soon, configs):
@@ -101,9 +107,29 @@ def _BuilderMain(table_type, configs):
     table_type: TableType to build tables of.
     configs: Configuration dictionary.
   """
-  builder = archive_builder_factory.CreateBuilder(
-      table_type=table_type, configs=configs)
-  builder.Run()
+  metric_prefix = '%s/builder/%s' % (constants.METRIC_BASE, table_type.value)
+  with metrics.SuccessCounter('%s/tick' % metric_prefix):
+    builder = archive_builder_factory.CreateBuilder(
+        table_type=table_type, configs=configs)
+    builder.Run()
+
+
+@contextlib.contextmanager
+def _SetupTsMon(short_lived):
+  """Sets up ts_mon and cleans up it on exit.
+
+  Args:
+    short_lived: A boolean indicating this process it short-lived or not.
+  """
+  with ts_mon_config.SetupTsMonGlobalState(
+      _TS_MON_SERVICE_NAME,
+      short_lived=short_lived,
+      auto_flush=(not short_lived)):
+    try:
+      yield
+    finally:
+      if short_lived:
+        metrics.Flush()
 
 
 def _SetupLogging(verbose, process_name):
@@ -178,10 +204,11 @@ def main():
   process_name = options.table_type.value if options.table_type else 'scheduler'
   _SetupLogging(verbose=options.verbose, process_name=process_name)
 
-  if options.table_type:
-    _BuilderMain(table_type=options.table_type, configs=configs)
-  else:
-    _DaemonMain(run_soon=options.run_soon, configs=configs)
+  with _SetupTsMon(short_lived=options.one_shot):
+    if options.one_shot:
+      _BuilderMain(table_type=options.table_type, configs=configs)
+    else:
+      _DaemonMain(run_soon=options.run_soon, configs=configs)
 
 
 if __name__ == '__main__':

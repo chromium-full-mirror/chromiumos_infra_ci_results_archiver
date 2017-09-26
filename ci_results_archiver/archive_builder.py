@@ -9,6 +9,10 @@ from __future__ import print_function
 
 import logging
 
+from chromite.lib import metrics
+
+from ci_results_archiver import constants
+
 
 class ArchiveBuilder(object):
   r"""Archive table builder.
@@ -79,15 +83,17 @@ class ArchiveBuilder(object):
      implementation of BigQueryExporter and it is shared by all table types.
   """
 
-  def __init__(self, importer, modifier, exporter, checkpoint):
+  def __init__(self, table_type, importer, modifier, exporter, checkpoint):
     """Constructor.
 
     Args:
+      table_type: TableType object.
       importer: AbstractImporter object.
       modifier: AbstractModifier object.
       exporter: BigQueryExporter object.
       checkpoint: Checkpoint object.
     """
+    self._table_type = table_type
     self._importer = importer
     self._modifier = modifier
     self._exporter = exporter
@@ -95,26 +101,42 @@ class ArchiveBuilder(object):
 
   def Run(self):
     """Builds archive tables."""
-    # Load the next ID.
-    next_id = self._checkpoint.LoadNextId()
-    logging.info('Next ID: %d', next_id)
+    metric_prefix = ('%s/builder/%s' % (constants.METRIC_BASE,
+                                        self._table_type.value))
 
-    # Import entries.
-    entries, modify_ids, new_next_id = self._importer.ImportEntries(next_id)
-    logging.info('Imported %d entries.', len(entries))
+    with metrics.RuntimeBreakdownTimer(metric_prefix) as timer:
+      # Load the next ID.
+      with timer.Step('load_checkpoint'):
+        next_id = self._checkpoint.LoadNextId()
 
-    # Modify existing entries if we need to.
-    if modify_ids:
-      self._modifier.ModifyEntries(modify_ids)
+      logging.info('Next ID: %d', next_id)
 
-    # Insert new entries. Already existing entries are preserved, so it is
-    # safe to repeat multiple times (e.g. when we failed to save new next
-    # ID).
-    if entries:
-      self._exporter.ExportNewEntries(entries)
+      # Import entries.
+      with timer.Step('import'):
+        entries, modify_ids, new_next_id = self._importer.ImportEntries(next_id)
+      logging.info('Imported %d entries.', len(entries))
 
-    logging.info('New next ID: %d', new_next_id)
-    self._checkpoint.SaveNextId(new_next_id)
+      # Modify existing entries if we need to.
+      if modify_ids:
+        with timer.Step('modify'):
+          self._modifier.ModifyEntries(modify_ids)
+
+      # Insert new entries. Already existing entries are preserved, so it is
+      # safe to repeat multiple times (e.g. when we failed to save new next
+      # ID).
+      if entries:
+        with timer.Step('export'):
+          self._exporter.ExportNewEntries(entries)
+
+      logging.info('New next ID: %d', new_next_id)
+      with timer.Step('save_checkpoint'):
+        self._checkpoint.SaveNextId(new_next_id)
 
     logging.info('Success: Exported %d entries, updated %d entries.',
                  len(entries), len(modify_ids))
+
+    metrics.GaugeMetric('%s/next_id' % metric_prefix).set(next_id)
+    metrics.CounterMetric(
+        '%s/modify_count' % metric_prefix).increment_by(len(modify_ids))
+    metrics.CounterMetric(
+        '%s/export_count' % metric_prefix).increment_by(len(entries))

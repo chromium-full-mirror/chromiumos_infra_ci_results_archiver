@@ -79,6 +79,7 @@ def CreateBuilder(table_type, configs):
       bucket=bucket, dataset=dataset.name, table_prefix=table_spec.table_prefix)
 
   return archive_builder.ArchiveBuilder(
+      table_type=table_type,
       importer=importer,
       modifier=modifier,
       exporter=exporter,
