@@ -44,7 +44,7 @@ FROM
     ORDER BY job_idx ASC
     LIMIT %(limit)s
   ) AS j
-  INNER JOIN
+  LEFT OUTER JOIN
     tko_machines AS m
     ON m.machine_idx = j.machine_idx
 ;
@@ -70,10 +70,10 @@ FROM
     FROM tko_tests
     WHERE job_idx IN %(tko_job_ids)s
   ) AS t
-  INNER JOIN
+  LEFT OUTER JOIN
     tko_status AS s
     ON s.status_idx = t.status
-  INNER JOIN
+  LEFT OUTER JOIN
     tko_machines AS m
     ON m.machine_idx = t.machine_idx
 ;
