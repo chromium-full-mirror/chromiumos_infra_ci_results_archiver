@@ -1,0 +1,40 @@
+tables:
+  afe_jobs:
+    max_entries: 1000
+    grace_period:
+     timeout: 10s
+  tko_jobs:
+    max_entries: 2000
+    grace_period:
+      capacity: 200
+  cidb_builds:
+    max_entries: 3000
+    grace_period:
+      timeout: 30s
+
+databases:
+  afe:
+    credentials:
+      hostname: afehostname
+      username: afeusername
+      password: afepassword
+      database: afedatabase
+    timezone: US/Pacific
+  tko:
+    credentials:
+      hostname: tkohostname
+      username: tkousername
+      password: tkopassword
+      database: tkodatabase
+    timezone: Asia/Tokyo
+
+cidb:
+  credentials_dir: "/path/to/cidb_creds"
+
+bigquery:
+  project: bqproject
+  dataset: somedataset
+
+cloud_storage:
+  project: gcsproject
+  bucket: somebucket
