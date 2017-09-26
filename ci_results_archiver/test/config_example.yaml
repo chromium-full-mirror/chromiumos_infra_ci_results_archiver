@@ -1,3 +1,7 @@
+scheduler:
+  interval: 20m
+  timeout: 19m30s
+
 tables:
   afe_jobs:
     max_entries: 1000
