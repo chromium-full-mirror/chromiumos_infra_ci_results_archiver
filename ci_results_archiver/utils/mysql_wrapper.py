@@ -10,6 +10,7 @@ from __future__ import print_function
 import logging
 import time
 
+from chromite.lib import retry_util
 import MySQLdb
 import MySQLdb.constants
 import MySQLdb.converters
@@ -44,22 +45,17 @@ class MySQLWrapper(object):
     Raises:
       MySQLdb.Error: On MySQL errors.
     """
-    conv = MySQLdb.converters.conversions.copy()
-    conv.update({
+    self._hostname = hostname
+    self._username = username
+    self._password = password
+    self._database = database
+    self._timezone = timezone
+    self._conversions = MySQLdb.converters.conversions.copy()
+    self._conversions.update({
         MySQLdb.constants.FIELD_TYPE.DATETIME: self._ConvertDatetime,
         MySQLdb.constants.FIELD_TYPE.TIMESTAMP: self._ConvertTimestamp,
     })
-    self._conn = MySQLdb.connect(
-        host=hostname,
-        user=username,
-        passwd=password,
-        db=database,
-        charset='utf8',
-        use_unicode=True,
-        conv=conv)
-    self._timezone = timezone
-    # Set session timezone to UTC.
-    self._conn.cursor().execute('SET time_zone = "+0:00"')
+    self._Reconnect()
 
   def RunQuery(self, query, description, params=()):
     """Runs a query.
@@ -79,16 +75,50 @@ class MySQLWrapper(object):
     logging.info('Running MySQL query: %s', description)
     logging.debug('Query: %s', query)
 
-    cursor = self._conn.cursor(MySQLdb.cursors.DictCursor)
+    def DoRunQuery():
+      """Actually runs a query."""
+      cursor = self._conn.cursor(MySQLdb.cursors.DictCursor)
+      cursor.execute(query, params)
+      return list(cursor.fetchall())
+
+    def HandleException(exception):
+      """Handles an exception raised in DoRunQuery()."""
+      # pylint: disable=no-member
+      # pylint can not find MySQLdb.OperationalError because it is in a
+      # C extension.
+      if (isinstance(exception, MySQLdb.OperationalError) and
+          exception.args[0] == 2006):
+        # 2006: MySQL server has gone away. Reconnect and retry the query.
+        logging.warning('MySQL server has gone away. Reconnecting.')
+        self._Reconnect()
+        return True
+      return False
 
     start_time = time.time()
-    cursor.execute(query, params)
-    rows = list(cursor.fetchall())
+    rows = retry_util.GenericRetry(
+        handler=HandleException, max_retry=3, functor=DoRunQuery)
     end_time = time.time()
 
     logging.info('MySQL query successfully finished in %.3fs; got %d rows.',
                  end_time - start_time, len(rows))
     return rows
+
+  def _Reconnect(self):
+    """Reconnects to the server.
+
+    Raises:
+      MySQLdb.Error: On MySQL errors.
+    """
+    self._conn = MySQLdb.connect(
+        host=self._hostname,
+        user=self._username,
+        passwd=self._password,
+        db=self._database,
+        charset='utf8',
+        use_unicode=True,
+        conv=self._conversions)
+    # Set session timezone to UTC.
+    self._conn.cursor().execute('SET time_zone = "+0:00"')
 
   def _ConvertDatetime(self, mysql_value):
     """Converts MySQL DATETIME value to UTC datetime object.
