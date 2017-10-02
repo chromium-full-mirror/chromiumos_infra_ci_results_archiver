@@ -37,9 +37,6 @@ class BigQueryExporter(object):
 
     Args:
       entries: A list of dictionaries representing entries.
-
-    Returns:
-      The first available ID beyond |entries|, or None if |entries| is empty.
     """
     if not entries:
       return None
@@ -48,8 +45,6 @@ class BigQueryExporter(object):
     for date, entries_in_date in sorted(entries_by_date.items()):
       table_suffix = date.strftime('%Y%m%d')
       self._ExportNewEntriesToTable(table_suffix, entries_in_date)
-    new_next_id = max(e[self._table_spec.id_column] for e in entries) + 1
-    return new_next_id
 
   def _ExportNewEntriesToTable(self, table_suffix, entries):
     """Exports new entries to a specified BigQuery table.

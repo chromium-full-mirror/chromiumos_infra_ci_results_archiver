@@ -29,7 +29,7 @@ class TkoJobImporter(abstract_importer.AbstractImporter):
     """Imports TKO job entries."""
     job_map = self._QueryJobMap(next_id)
     if not job_map:
-      return [], []
+      return [], [], next_id
 
     job_keyvals_map = self._QueryJobKeyvalsMap(job_map.keys())
     tests_map = self._QueryTestsMap(job_map.keys())
@@ -41,7 +41,8 @@ class TkoJobImporter(abstract_importer.AbstractImporter):
 
     jobs = job_map.values()
     invalid_tko_test_ids = self._ScanAndApplyInvalidation(jobs)
-    return jobs, invalid_tko_test_ids
+    new_next_id = max(j['tko_job_id'] for j in jobs) + 1 if jobs else next_id
+    return jobs, invalid_tko_test_ids, new_next_id
 
   def _QueryJobMap(self, next_id):
     """Retrieves TKO job entries from the TKO database.

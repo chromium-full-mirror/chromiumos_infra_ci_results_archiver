@@ -39,7 +39,7 @@ class CidbBuildImporterTestCase(unittest.TestCase):
 
     importer = cidb_build_importer.CidbBuildImporter(
         cidb=self._cidb, max_entries=10, grace_period=DEFAULT_GRACE_PERIOD)
-    entries, modify_ids = importer.ImportEntries(next_id=0)
+    entries, modify_ids, new_next_id = importer.ImportEntries(next_id=0)
 
     self.assertEquals([
         {
@@ -72,6 +72,7 @@ class CidbBuildImporterTestCase(unittest.TestCase):
         },
     ], entries)
     self.assertEquals([], modify_ids)
+    self.assertEquals(2, new_next_id)
 
   def testImportRange(self):
     """ImportEntries() handles next_id and max_entries."""
@@ -84,19 +85,21 @@ class CidbBuildImporterTestCase(unittest.TestCase):
 
     importer = cidb_build_importer.CidbBuildImporter(
         cidb=self._cidb, max_entries=2, grace_period=DEFAULT_GRACE_PERIOD)
-    entries, _ = importer.ImportEntries(next_id=3)
+    entries, _, new_next_id = importer.ImportEntries(next_id=3)
 
     self.assertEquals(2, len(entries))
     self.assertEquals(3, entries[0]['cidb_build_id'])
     self.assertEquals(4, entries[1]['cidb_build_id'])
+    self.assertEquals(5, new_next_id)
 
   def testNoEntries(self):
     """ImportEntries() works even if there is no entry to import."""
     importer = cidb_build_importer.CidbBuildImporter(
         cidb=self._cidb, max_entries=10, grace_period=DEFAULT_GRACE_PERIOD)
-    entries, _ = importer.ImportEntries(next_id=0)
+    entries, _, new_next_id = importer.ImportEntries(next_id=123)
 
     self.assertEquals(0, len(entries))
+    self.assertEquals(123, new_next_id)
 
   def testCorruptedBuild(self):
     """ImportEntries() handles corrupted builds from CIDBConnection."""
@@ -105,9 +108,10 @@ class CidbBuildImporterTestCase(unittest.TestCase):
 
     importer = cidb_build_importer.CidbBuildImporter(
         cidb=mock_cidb, max_entries=10, grace_period=DEFAULT_GRACE_PERIOD)
-    entries, _ = importer.ImportEntries(next_id=0)
+    entries, _, new_next_id = importer.ImportEntries(next_id=123)
 
     self.assertEquals(0, len(entries))
+    self.assertEquals(123, new_next_id)
 
 
 def _CreateCidbBuildEntry(

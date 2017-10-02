@@ -45,7 +45,7 @@ class TkoJobImporterTestCase(unittest.TestCase):
         ])
     importer = tko_job_importer.TkoJobImporter(
         tko=tko, max_entries=10, grace_period=_DEFAULT_GRACE_PERIOD)
-    entries, modify_ids = importer.ImportEntries(next_id=1000)
+    entries, modify_ids, new_next_id = importer.ImportEntries(next_id=1000)
 
     self.assertEquals([
         {
@@ -141,6 +141,7 @@ class TkoJobImporterTestCase(unittest.TestCase):
         },
     ], entries)
     self.assertEquals([], modify_ids)
+    self.assertEquals(1002, new_next_id)
 
   def testInvalidation(self):
     """ImportEntries() processes invalidations."""
@@ -167,7 +168,7 @@ class TkoJobImporterTestCase(unittest.TestCase):
         ])
     importer = tko_job_importer.TkoJobImporter(
         tko=tko, max_entries=10, grace_period=_DEFAULT_GRACE_PERIOD)
-    entries, modify_ids = importer.ImportEntries(next_id=1000)
+    entries, modify_ids, _ = importer.ImportEntries(next_id=1000)
 
     self.assertEquals(1, len(entries))
     tests = entries[0]['tests']
@@ -206,20 +207,22 @@ class TkoJobImporterTestCase(unittest.TestCase):
     ])
     importer = tko_job_importer.TkoJobImporter(
         tko=tko, max_entries=2, grace_period=_DEFAULT_GRACE_PERIOD)
-    entries, _ = importer.ImportEntries(next_id=1003)
+    entries, _, new_next_id = importer.ImportEntries(next_id=1003)
 
     self.assertEquals(2, len(entries))
     self.assertEquals(1003, entries[0]['tko_job_id'])
     self.assertEquals(1004, entries[1]['tko_job_id'])
+    self.assertEquals(1005, new_next_id)
 
   def testNoEntries(self):
     """ImportEntries() works even if there is no entry to import."""
     tko = fake_tko_connection.FakeTkoConnection()
     importer = tko_job_importer.TkoJobImporter(
         tko=tko, max_entries=10, grace_period=_DEFAULT_GRACE_PERIOD)
-    entries, _ = importer.ImportEntries(next_id=1000)
+    entries, _, new_next_id = importer.ImportEntries(next_id=1000)
 
     self.assertEquals(0, len(entries))
+    self.assertEquals(1000, new_next_id)
 
 
 def _CreateTkoJobRow(

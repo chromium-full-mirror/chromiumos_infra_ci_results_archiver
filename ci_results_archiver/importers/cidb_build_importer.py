@@ -61,8 +61,10 @@ class CidbBuildImporter(abstract_importer.AbstractImporter):
         builds.append(build)
 
     builds = self._grace_period.FilterEntries(builds)
+    new_next_id = (max(b['cidb_build_id'] for b in builds) + 1
+                   if builds else next_id)
 
-    return builds, []
+    return builds, [], new_next_id
 
 
 def _ConvertBuild(raw_build):

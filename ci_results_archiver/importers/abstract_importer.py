@@ -29,10 +29,11 @@ class AbstractImporter(object):
         ID.
 
     Returns:
-      (entries, modify_ids) where:
+      (entries, modify_ids, new_next_id) where:
         entries: A list of dictionaries representing entries.
         modify_ids: List of entry IDs to modify which will be later passed
             to Modifier.modify_entries().
+        new_next_id: New next_id.
 
     Raises:
       MySQLdb.Error: On MySQL errors.

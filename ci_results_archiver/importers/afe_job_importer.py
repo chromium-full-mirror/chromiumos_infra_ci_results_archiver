@@ -47,7 +47,7 @@ class AfeJobImporter(abstract_importer.AbstractImporter):
     """Imports AFE job entries."""
     job_map = self._QueryJobMap(next_id)
     if not job_map:
-      return [], []
+      return [], [], next_id
 
     job_keyvals_map = self._QueryJobKeyvalsMap(job_map.keys())
     job_dependency_labels_map = self._QueryJobDependencyLabelsMap(
@@ -58,7 +58,10 @@ class AfeJobImporter(abstract_importer.AbstractImporter):
       job['keyvals'] = job_keyvals_map[job_id]
       job['dependency_labels'] = job_dependency_labels_map[job_id]
 
-    return job_map.values(), []
+    jobs = job_map.values()
+    new_next_id = max(j['afe_job_id'] for j in jobs) + 1 if jobs else next_id
+
+    return jobs, [], new_next_id
 
   def _QueryJobMap(self, next_id):
     """Retrieves AFE job entries from the AFE database.

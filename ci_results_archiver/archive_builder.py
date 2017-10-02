@@ -100,7 +100,7 @@ class ArchiveBuilder(object):
     logging.info('Next ID: %d', next_id)
 
     # Import entries.
-    entries, modify_ids = self._importer.ImportEntries(next_id)
+    entries, modify_ids, new_next_id = self._importer.ImportEntries(next_id)
     logging.info('Imported %d entries.', len(entries))
 
     # Modify existing entries if we need to.
@@ -111,9 +111,10 @@ class ArchiveBuilder(object):
     # safe to repeat multiple times (e.g. when we failed to save new next
     # ID).
     if entries:
-      new_next_id = self._exporter.ExportNewEntries(entries)
-      logging.info('New next ID: %d', new_next_id)
-      self._checkpoint.SaveNextId(new_next_id)
+      self._exporter.ExportNewEntries(entries)
+
+    logging.info('New next ID: %d', new_next_id)
+    self._checkpoint.SaveNextId(new_next_id)
 
     logging.info('Success: Exported %d entries, updated %d entries.',
                  len(entries), len(modify_ids))

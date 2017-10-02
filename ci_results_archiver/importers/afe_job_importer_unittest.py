@@ -46,7 +46,7 @@ class AfeJobImporterTestCase(unittest.TestCase):
         ])
     importer = afe_job_importer.AfeJobImporter(
         afe=afe, max_entries=10, grace_period=_DEFAULT_GRACE_PERIOD)
-    entries, modify_ids = importer.ImportEntries(next_id=1000)
+    entries, modify_ids, new_next_id = importer.ImportEntries(next_id=1000)
 
     self.assertEquals([
         {
@@ -125,6 +125,7 @@ class AfeJobImporterTestCase(unittest.TestCase):
         },
     ], entries)
     self.assertEquals([], modify_ids)
+    self.assertEquals(1003, new_next_id)
 
   def testImportRange(self):
     """ImportEntries() handles next_id and max_entries."""
@@ -138,20 +139,22 @@ class AfeJobImporterTestCase(unittest.TestCase):
     ])
     importer = afe_job_importer.AfeJobImporter(
         afe=afe, max_entries=2, grace_period=_DEFAULT_GRACE_PERIOD)
-    entries, _ = importer.ImportEntries(next_id=1003)
+    entries, _, new_next_id = importer.ImportEntries(next_id=1003)
 
     self.assertEquals(2, len(entries))
     self.assertEquals(1003, entries[0]['afe_job_id'])
     self.assertEquals(1004, entries[1]['afe_job_id'])
+    self.assertEquals(1005, new_next_id)
 
   def testNoEntries(self):
     """ImportEntries() works even if there is no entry to import."""
     afe = fake_afe_connection.FakeAfeConnection()
     importer = afe_job_importer.AfeJobImporter(
         afe=afe, max_entries=10, grace_period=_DEFAULT_GRACE_PERIOD)
-    entries, _ = importer.ImportEntries(next_id=1000)
+    entries, _, new_next_id = importer.ImportEntries(next_id=1000)
 
     self.assertEquals(0, len(entries))
+    self.assertEquals(1000, new_next_id)
 
 
 def _CreateAfeJobRow(
