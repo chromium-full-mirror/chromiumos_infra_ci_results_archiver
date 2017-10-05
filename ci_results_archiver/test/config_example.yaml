@@ -41,4 +41,5 @@ bigquery:
 
 cloud_storage:
   project: gcsproject
-  bucket: somebucket
+  persistent_bucket: goodbucket
+  temporary_bucket: somebucket

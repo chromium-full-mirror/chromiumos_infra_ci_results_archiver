@@ -64,7 +64,11 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.bigquery_mock.return_value.dataset.assert_called_once_with(
         'somedataset')
     self.storage_mock.assert_called_once_with('gcsproject')
-    self.storage_mock.return_value.bucket.assert_called_once_with('somebucket')
+    self.storage_mock.return_value.bucket.assert_has_calls(
+        [
+            mock.call('somebucket'),
+            mock.call('goodbucket'),
+        ], any_order=True)
 
   def testTkoJobs(self):
     """CreateBuilder() for tko_jobs."""
@@ -92,7 +96,11 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.bigquery_mock.return_value.dataset.assert_called_once_with(
         'somedataset')
     self.storage_mock.assert_called_once_with('gcsproject')
-    self.storage_mock.return_value.bucket.assert_called_once_with('somebucket')
+    self.storage_mock.return_value.bucket.assert_has_calls(
+        [
+            mock.call('somebucket'),
+            mock.call('goodbucket'),
+        ], any_order=True)
 
   def testCidbBuilds(self):
     """CreateBuilder() for cidb_builds."""
@@ -115,7 +123,11 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.bigquery_mock.return_value.dataset.assert_called_once_with(
         'somedataset')
     self.storage_mock.assert_called_once_with('gcsproject')
-    self.storage_mock.return_value.bucket.assert_called_once_with('somebucket')
+    self.storage_mock.return_value.bucket.assert_has_calls(
+        [
+            mock.call('somebucket'),
+            mock.call('goodbucket'),
+        ], any_order=True)
 
   def _Patch(self, name):
     """Mocks out an object using mock.patch(), and restores it after the test.

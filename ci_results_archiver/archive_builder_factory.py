@@ -51,13 +51,16 @@ def CreateBuilder(table_type, configs):
   bigquery_client = bigquery.Client(configs['bigquery']['project'])
   dataset = bigquery_client.dataset(configs['bigquery']['dataset'])
   storage_client = storage.Client(configs['cloud_storage']['project'])
-  bucket = storage_client.bucket(configs['cloud_storage']['bucket'])
+  temporary_bucket = storage_client.bucket(
+      configs['cloud_storage']['temporary_bucket'])
+  persistent_bucket = storage_client.bucket(
+      configs['cloud_storage']['persistent_bucket'])
 
   bigquery_wrapper = bigquery_wrapper_lib.BigQueryWrapper(
       bigquery_client=bigquery_client,
       dataset=dataset,
       storage_client=storage_client,
-      bucket=bucket)
+      bucket=temporary_bucket)
 
   if table_type == table_types.TableType.TKO_JOBS:
     bigquery_tables = bigquery_tko_tables.BigQueryTkoTables(
@@ -76,7 +79,9 @@ def CreateBuilder(table_type, configs):
       bigquery_tables=bigquery_tables, table_spec=table_spec)
 
   checkpointer = checkpointer_lib.Checkpointer(
-      bucket=bucket, dataset=dataset.name, table_prefix=table_spec.table_prefix)
+      bucket=persistent_bucket,
+      dataset=dataset.name,
+      table_prefix=table_spec.table_prefix)
 
   return archive_builder.ArchiveBuilder(
       table_type=table_type,
