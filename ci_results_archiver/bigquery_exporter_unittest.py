@@ -35,7 +35,7 @@ class BigQueryExporterTestCase(unittest.TestCase):
 
   def testNew(self):
     """All entries are new."""
-    self.exporter.ExportNewEntries([
+    table_suffixes = self.exporter.ExportNewEntries([
         {
             'afe_job_id': 111,
             'created_on': APR_1,
@@ -50,6 +50,8 @@ class BigQueryExporterTestCase(unittest.TestCase):
         },
     ])
 
+    self.assertEquals(['20170401', '20170402', '20170403'],
+                      sorted(table_suffixes))
     self.assertEquals({
         'afe_jobs20170401': [{
             'afe_job_id': 111,
@@ -74,7 +76,7 @@ class BigQueryExporterTestCase(unittest.TestCase):
         ],
     }
 
-    self.exporter.ExportNewEntries([
+    table_suffixes = self.exporter.ExportNewEntries([
         {
             'afe_job_id': 111,
             'created_on': APR_1,
@@ -89,6 +91,7 @@ class BigQueryExporterTestCase(unittest.TestCase):
         },
     ])
 
+    self.assertEquals(['20170401'], sorted(table_suffixes))
     self.assertEquals({
         'afe_jobs20170401': [
             {

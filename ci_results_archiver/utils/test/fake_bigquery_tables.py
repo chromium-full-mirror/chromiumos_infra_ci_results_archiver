@@ -13,6 +13,7 @@ class FakeBigQueryTables(object):
 
   Attributes:
     tables: Map from a table name to a list of entries.
+    exports: Map from a URL to an exported table name.
   """
 
   def __init__(self, table_spec, tables):
@@ -24,6 +25,7 @@ class FakeBigQueryTables(object):
     """
     self._table_spec = table_spec
     self.tables = tables
+    self.exports = {}
 
   def ListTableSuffixes(self):
     """Retrieves a list of table name suffixes."""
@@ -47,3 +49,8 @@ class FakeBigQueryTables(object):
     table_name = self._table_spec.table_prefix + table_suffix
     for entry in entries:
       self.tables.setdefault(table_name, []).append(entry)
+
+  def ExportToStorage(self, table_suffix, destination_url):
+    """Exports a table into Google Cloud Storage."""
+    table_name = self._table_spec.table_prefix + table_suffix
+    self.exports[destination_url] = table_name

@@ -37,14 +37,20 @@ class BigQueryExporter(object):
 
     Args:
       entries: A list of dictionaries representing entries.
+
+    Returns:
+      A list of name suffixes of updated BigQuery tables.
     """
     if not entries:
-      return None
+      return []
     entries_by_date = _PartitionByDate(
         entries, self._table_spec.partition_timestamp_column)
+    exported_table_suffixes = []
     for date, entries_in_date in sorted(entries_by_date.items()):
       table_suffix = date.strftime('%Y%m%d')
       self._ExportNewEntriesToTable(table_suffix, entries_in_date)
+      exported_table_suffixes.append(table_suffix)
+    return exported_table_suffixes
 
   def _ExportNewEntriesToTable(self, table_suffix, entries):
     """Exports new entries to a specified BigQuery table.

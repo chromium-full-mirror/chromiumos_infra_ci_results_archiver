@@ -27,6 +27,9 @@ class AbstractModifier(object):
       modify_ids: List of entry IDs to modify, returned from
         Importer.import_entries().
 
+    Returns:
+      A list of name suffixes of modified BigQuery tables.
+
     Raises:
       google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
     """

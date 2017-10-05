@@ -29,8 +29,8 @@ class ArchiveBuilder(object):
   Design Overview
   ---------------
 
-  Archive table builder consists of three primary components (importer,
-  modifier and exporter):
+  Archive table builder consists of four primary components (importer,
+  modifier, exporter and dumper):
 
                /------------------------\
                |       MySQL DB         |
@@ -51,6 +51,16 @@ class ArchiveBuilder(object):
                   v                 v
                /------------------------\
                |       BigQuery         |
+               \------------------------/
+                           |
+                           v
+                      +---------+
+                      | Dumper  |
+                      +----+----+
+                           |
+                           v
+               /------------------------\
+               |     Cloud Storage      |
                \------------------------/
 
   1. Importer: Downloads entries from MySQL databases and returns them as a
@@ -82,9 +92,16 @@ class ArchiveBuilder(object):
 
      In contrast to importers and modifiers, there is only a single
      implementation of BigQueryExporter and it is shared by all table types.
+
+  4. BigQueryDumper: Dumps BigQuery tables updated by the modifier and the
+     exporter to Google Cloud Storage.
+
+     BigQuery tables are dumped as newline-delimited JSON files. They are useful
+     for batch access.
   """
 
-  def __init__(self, table_type, importer, modifier, exporter, checkpointer):
+  def __init__(self, table_type, importer, modifier, exporter, dumper,
+               checkpointer):
     """Constructor.
 
     Args:
@@ -92,12 +109,14 @@ class ArchiveBuilder(object):
       importer: AbstractImporter object.
       modifier: AbstractModifier object.
       exporter: BigQueryExporter object.
+      dumper: BigQueryDumper object.
       checkpointer: Checkpointer object.
     """
     self._table_type = table_type
     self._importer = importer
     self._modifier = modifier
     self._exporter = exporter
+    self._dumper = dumper
     self._checkpointer = checkpointer
 
   def Run(self):
@@ -119,17 +138,26 @@ class ArchiveBuilder(object):
         entries, modify_ids, new_next_id = self._importer.ImportEntries(next_id)
       logging.info('Imported %d entries.', len(entries))
 
+      updated_table_suffixes = set()
+
       # Modify existing entries if we need to.
       if modify_ids:
         with timer.Step('modify'):
-          self._modifier.ModifyEntries(modify_ids)
+          modified_table_suffixes = self._modifier.ModifyEntries(modify_ids)
+          updated_table_suffixes.update(modified_table_suffixes)
 
       # Insert new entries. Already existing entries are preserved, so it is
       # safe to repeat multiple times (e.g. when we failed to save new next
       # ID).
       if entries:
         with timer.Step('export'):
-          self._exporter.ExportNewEntries(entries)
+          exported_table_suffixes = self._exporter.ExportNewEntries(entries)
+          updated_table_suffixes.update(exported_table_suffixes)
+
+      # Dump updated tables.
+      if updated_table_suffixes:
+        with timer.Step('dump'):
+          self._dumper.DumpTables(list(updated_table_suffixes))
 
       logging.info('New next ID: %d', new_next_id)
       new_checkpoint = checkpoint._replace(

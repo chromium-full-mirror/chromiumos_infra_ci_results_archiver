@@ -139,7 +139,28 @@ class BigQueryWrapper(object):
 
     self._UploadEntriesToGs(entries, json_path)
     job = self._CreateLoadJobFromGs(json_path, schema, table_name, job_name)
-    self._StartAndWaitForLoadJobCompletion(job)
+    self._StartAndWaitForJobCompletion(job)
+
+  def ExportToStorage(self, table_name, destination_url, job_name=None):
+    """Exports a table into Google Cloud Storage.
+
+    A table is exported as a gzip'ed newline-delimited JSON file.
+
+    Args:
+      table_name: Table name.
+      destination_url: Destination URL starting with gs://.
+      job_name: If set, sets the load job name explicitly. Usually you do not
+          need to set this.
+
+    Raises:
+      google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
+    """
+    if job_name is None:
+      job_name = 'export_%s_%s_%s' % (
+          self._dataset.name, table_name,
+          datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f'))
+    job = self._CreateExportJob(table_name, destination_url, job_name)
+    self._StartAndWaitForJobCompletion(job)
 
   def _UploadEntriesToGs(self, entries, json_path):
     """Uploads entries to Google Cloud Storage as a newline-delimited JSON.
@@ -175,19 +196,35 @@ class BigQueryWrapper(object):
     job.schema = schema
     return job
 
-  def _StartAndWaitForLoadJobCompletion(self, job):
-    """Starts a load job and waits for it to finish.
+  def _CreateExportJob(self, table_name, url, job_name):
+    """Creates a new export job.
 
     Args:
-      job: google.cloud.bigquery.job.LoadTableFromStorageJob object.
+      table_name: Table name.
+      url: GS URL of the destination.
+      job_name: Unique name of a load job.
+
+    Returns:
+      google.cloud.bigquery.job.ExtractTableToStorageJob object.
+    """
+    job = self._bigquery_client.extract_table_to_storage(
+        job_name, self._dataset.table(table_name), url)
+    job.compression = 'GZIP'
+    job.destination_format = 'NEWLINE_DELIMITED_JSON'
+    return job
+
+  def _StartAndWaitForJobCompletion(self, job):
+    """Starts a job and waits for it to finish.
+
+    Args:
+      job: google.cloud.bigquery.job._AsyncJob object.
 
     Raises:
       BigQueryError: On backend errors.
     """
     start_time = time.time()
     job.begin()
-    logging.info('Started a job "%s" to load entries into %s.%s', job.name,
-                 job.destination.dataset_name, job.destination.name)
+    logging.info('Job "%s" started.', job.name)
 
     while True:
       job.reload()
@@ -199,7 +236,8 @@ class BigQueryWrapper(object):
       time.sleep(1)
 
     end_time = time.time()
-    logging.info('Load successfully finished in %.3fs.', end_time - start_time)
+    logging.info('Job "%s" successfully finished in %.3fs.', job.name,
+                 end_time - start_time)
 
 
 def _SerializeToNewlineDelimitedJson(entries):

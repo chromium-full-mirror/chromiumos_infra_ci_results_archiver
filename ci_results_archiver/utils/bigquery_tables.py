@@ -81,3 +81,18 @@ class BigQueryTables(object):
     """
     table_name = self._table_spec.table_prefix + table_suffix
     self._bigquery_wrapper.LoadEntries(table_name, schema, entries)
+
+  def ExportToStorage(self, table_suffix, destination_url):
+    """Exports a table into Google Cloud Storage.
+
+    A table is exported as a gzip'ed newline-delimited JSON file.
+
+    Args:
+      table_suffix: Table name suffix.
+      destination_url: Destination URL starting with gs://.
+
+    Raises:
+      google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
+    """
+    table_name = self._table_spec.table_prefix + table_suffix
+    self._bigquery_wrapper.ExportToStorage(table_name, destination_url)

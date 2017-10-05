@@ -13,6 +13,7 @@ from google.cloud import storage  # pylint: disable=import-error,no-name-in-modu
 import pytz
 
 from ci_results_archiver import archive_builder
+from ci_results_archiver import bigquery_dumper
 from ci_results_archiver import bigquery_exporter
 from ci_results_archiver import checkpointer as checkpointer_lib
 from ci_results_archiver import table_specs
@@ -78,6 +79,11 @@ def CreateBuilder(table_type, configs):
   exporter = bigquery_exporter.BigQueryExporter(
       bigquery_tables=bigquery_tables, table_spec=table_spec)
 
+  dumper = bigquery_dumper.BigQueryDumper(
+      bigquery_tables=bigquery_tables,
+      table_spec=table_spec,
+      bucket_name=persistent_bucket.name)
+
   checkpointer = checkpointer_lib.Checkpointer(
       bucket=persistent_bucket,
       dataset=dataset.name,
@@ -88,6 +94,7 @@ def CreateBuilder(table_type, configs):
       importer=importer,
       modifier=modifier,
       exporter=exporter,
+      dumper=dumper,
       checkpointer=checkpointer)
 
 

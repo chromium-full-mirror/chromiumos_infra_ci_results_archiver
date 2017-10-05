@@ -40,15 +40,9 @@ class TkoJobTestInvalidator(abstract_modifier.AbstractModifier):
     Implements AbstractModifier.modify_entries().
 
     Note that this function receives TKO *test* IDs, not TKO job IDs.
-
-    Args:
-      invalid_tko_test_ids: A list of TKO test IDs to invalidate.
-
-    Raises:
-      google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
     """
     if not invalid_tko_test_ids:
-      return
+      return []
 
     logging.info('Invalidating %d tests.', len(invalid_tko_test_ids))
 
@@ -57,6 +51,7 @@ class TkoJobTestInvalidator(abstract_modifier.AbstractModifier):
     recent_table_suffixes = all_table_suffixes[:_NUM_RECENT_TABLES]
 
     invalidating_id_set = set(invalid_tko_test_ids)
+    modified_table_suffixes = []
 
     for table_suffix in recent_table_suffixes:
       table_ids = self._bigquery_tables.QueryAllTkoTestIds(table_suffix)
@@ -66,6 +61,7 @@ class TkoJobTestInvalidator(abstract_modifier.AbstractModifier):
       else:
         self._bigquery_tables.InvalidateTkoTests(table_suffix,
                                                  sorted(hit_id_set))
+        modified_table_suffixes.append(table_suffix)
         logging.info('Invalidated %d tests in %s.',
                      len(hit_id_set), table_suffix)
       invalidating_id_set -= hit_id_set
@@ -75,3 +71,4 @@ class TkoJobTestInvalidator(abstract_modifier.AbstractModifier):
     if invalidating_id_set:
       logging.warning('Following TKO tests were not found in recent tables: %s',
                       ', '.join(str(i) for i in sorted(invalidating_id_set)))
+    return modified_table_suffixes

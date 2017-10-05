@@ -55,8 +55,9 @@ class TkoJobTestInvalidatorTestCase(unittest.TestCase):
 
   def testNone(self):
     """Invalidates no entry."""
-    self.modifier.ModifyEntries([])
+    table_suffixes = self.modifier.ModifyEntries([])
 
+    self.assertEquals([], sorted(table_suffixes))
     self.assertEquals({
         'tko_jobs20170401': [
             {
@@ -87,8 +88,9 @@ class TkoJobTestInvalidatorTestCase(unittest.TestCase):
 
   def testSingle(self):
     """Invalidates a single entry in a single table."""
-    self.modifier.ModifyEntries([121])
+    table_suffixes = self.modifier.ModifyEntries([121])
 
+    self.assertEquals(['20170401'], sorted(table_suffixes))
     self.assertEquals({
         'tko_jobs20170401': [
             {
@@ -119,8 +121,9 @@ class TkoJobTestInvalidatorTestCase(unittest.TestCase):
 
   def testAlreadyInvalidated(self):
     """Invalidates an already-invalidated entry."""
-    self.modifier.ModifyEntries([212])
+    table_suffixes = self.modifier.ModifyEntries([212])
 
+    self.assertEquals(['20170402'], sorted(table_suffixes))
     self.assertEquals({
         'tko_jobs20170401': [
             {
@@ -151,8 +154,9 @@ class TkoJobTestInvalidatorTestCase(unittest.TestCase):
 
   def testMissing(self):
     """Invalidates a missing entry."""
-    self.modifier.ModifyEntries([999])
+    table_suffixes = self.modifier.ModifyEntries([999])
 
+    self.assertEquals([], sorted(table_suffixes))
     self.assertEquals({
         'tko_jobs20170401': [
             {
@@ -183,8 +187,9 @@ class TkoJobTestInvalidatorTestCase(unittest.TestCase):
 
   def testMultiple(self):
     """Invalidates multiple entries in multiple tables."""
-    self.modifier.ModifyEntries([111, 121, 212])
+    table_suffixes = self.modifier.ModifyEntries([111, 121, 212])
 
+    self.assertEquals(['20170401', '20170402'], sorted(table_suffixes))
     self.assertEquals({
         'tko_jobs20170401': [
             {

@@ -15,6 +15,7 @@ import pytz
 
 from ci_results_archiver import archive_builder
 from ci_results_archiver import archive_builder_factory
+from ci_results_archiver import bigquery_dumper
 from ci_results_archiver import bigquery_exporter
 from ci_results_archiver import checkpointer
 from ci_results_archiver import config_loader
@@ -50,6 +51,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
 
     self.assertIsInstance(builder._importer, afe_job_importer.AfeJobImporter)
     self.assertIs(builder._modifier, None)
+    self.assertIsInstance(builder._dumper, bigquery_dumper.BigQueryDumper)
     self.assertIsInstance(builder._exporter, bigquery_exporter.BigQueryExporter)
     self.assertIsInstance(builder._checkpointer, checkpointer.Checkpointer)
 
@@ -82,6 +84,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.assertIsInstance(builder._importer, tko_job_importer.TkoJobImporter)
     self.assertIsInstance(builder._modifier,
                           tko_job_test_invalidator.TkoJobTestInvalidator)
+    self.assertIsInstance(builder._dumper, bigquery_dumper.BigQueryDumper)
     self.assertIsInstance(builder._exporter, bigquery_exporter.BigQueryExporter)
     self.assertIsInstance(builder._checkpointer, checkpointer.Checkpointer)
 
@@ -114,6 +117,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.assertIsInstance(builder._importer,
                           cidb_build_importer.CidbBuildImporter)
     self.assertIs(builder._modifier, None)
+    self.assertIsInstance(builder._dumper, bigquery_dumper.BigQueryDumper)
     self.assertIsInstance(builder._exporter, bigquery_exporter.BigQueryExporter)
     self.assertIsInstance(builder._checkpointer, checkpointer.Checkpointer)
 
