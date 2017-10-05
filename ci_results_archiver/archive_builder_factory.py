@@ -14,7 +14,7 @@ import pytz
 
 from ci_results_archiver import archive_builder
 from ci_results_archiver import bigquery_exporter
-from ci_results_archiver import checkpoint as checkpoint_lib
+from ci_results_archiver import checkpointer as checkpointer_lib
 from ci_results_archiver import table_specs
 from ci_results_archiver import table_types
 from ci_results_archiver.importers import afe_job_importer
@@ -75,7 +75,7 @@ def CreateBuilder(table_type, configs):
   exporter = bigquery_exporter.BigQueryExporter(
       bigquery_tables=bigquery_tables, table_spec=table_spec)
 
-  checkpoint = checkpoint_lib.Checkpoint(
+  checkpointer = checkpointer_lib.Checkpointer(
       bucket=bucket, dataset=dataset.name, table_prefix=table_spec.table_prefix)
 
   return archive_builder.ArchiveBuilder(
@@ -83,7 +83,7 @@ def CreateBuilder(table_type, configs):
       importer=importer,
       modifier=modifier,
       exporter=exporter,
-      checkpoint=checkpoint)
+      checkpointer=checkpointer)
 
 
 def _CreateImporter(table_type, table_spec, configs):

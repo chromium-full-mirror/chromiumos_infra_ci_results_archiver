@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import logging
+import time
 
 from chromite.lib import metrics
 
@@ -83,7 +84,7 @@ class ArchiveBuilder(object):
      implementation of BigQueryExporter and it is shared by all table types.
   """
 
-  def __init__(self, table_type, importer, modifier, exporter, checkpoint):
+  def __init__(self, table_type, importer, modifier, exporter, checkpointer):
     """Constructor.
 
     Args:
@@ -91,24 +92,26 @@ class ArchiveBuilder(object):
       importer: AbstractImporter object.
       modifier: AbstractModifier object.
       exporter: BigQueryExporter object.
-      checkpoint: Checkpoint object.
+      checkpointer: Checkpointer object.
     """
     self._table_type = table_type
     self._importer = importer
     self._modifier = modifier
     self._exporter = exporter
-    self._checkpoint = checkpoint
+    self._checkpointer = checkpointer
 
   def Run(self):
     """Builds archive tables."""
     metric_prefix = ('%s/builder/%s' % (constants.METRIC_BASE,
                                         self._table_type.value))
+    start_time = time.time()
 
     with metrics.RuntimeBreakdownTimer(metric_prefix) as timer:
       # Load the next ID.
       with timer.Step('load_checkpoint'):
-        next_id = self._checkpoint.LoadNextId()
+        checkpoint = self._checkpointer.Load()
 
+      next_id = checkpoint.next_id
       logging.info('Next ID: %d', next_id)
 
       # Import entries.
@@ -129,8 +132,11 @@ class ArchiveBuilder(object):
           self._exporter.ExportNewEntries(entries)
 
       logging.info('New next ID: %d', new_next_id)
+      new_checkpoint = checkpoint._replace(
+          next_id=new_next_id, last_start_time=start_time)
+
       with timer.Step('save_checkpoint'):
-        self._checkpoint.SaveNextId(new_next_id)
+        self._checkpointer.Save(new_checkpoint)
 
     logging.info('Success: Exported %d entries, updated %d entries.',
                  len(entries), len(modify_ids))

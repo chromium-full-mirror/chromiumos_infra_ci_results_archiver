@@ -16,7 +16,7 @@ import pytz
 from ci_results_archiver import archive_builder
 from ci_results_archiver import archive_builder_factory
 from ci_results_archiver import bigquery_exporter
-from ci_results_archiver import checkpoint
+from ci_results_archiver import checkpointer
 from ci_results_archiver import config_loader
 from ci_results_archiver import table_types
 from ci_results_archiver.importers import afe_job_importer
@@ -51,7 +51,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.assertIsInstance(builder._importer, afe_job_importer.AfeJobImporter)
     self.assertIs(builder._modifier, None)
     self.assertIsInstance(builder._exporter, bigquery_exporter.BigQueryExporter)
-    self.assertIsInstance(builder._checkpoint, checkpoint.Checkpoint)
+    self.assertIsInstance(builder._checkpointer, checkpointer.Checkpointer)
 
     self.mysql_mock.assert_called_once_with(
         hostname='afehostname',
@@ -79,7 +79,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.assertIsInstance(builder._modifier,
                           tko_job_test_invalidator.TkoJobTestInvalidator)
     self.assertIsInstance(builder._exporter, bigquery_exporter.BigQueryExporter)
-    self.assertIsInstance(builder._checkpoint, checkpoint.Checkpoint)
+    self.assertIsInstance(builder._checkpointer, checkpointer.Checkpointer)
 
     self.mysql_mock.assert_called_once_with(
         hostname='tkohostname',
@@ -107,7 +107,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
                           cidb_build_importer.CidbBuildImporter)
     self.assertIs(builder._modifier, None)
     self.assertIsInstance(builder._exporter, bigquery_exporter.BigQueryExporter)
-    self.assertIsInstance(builder._checkpoint, checkpoint.Checkpoint)
+    self.assertIsInstance(builder._checkpointer, checkpointer.Checkpointer)
 
     self.mysql_mock.assert_not_called()
     self.cidb_mock.assert_called_once_with('/path/to/cidb_creds')
