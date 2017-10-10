@@ -19,15 +19,15 @@ class FakeBigQueryTkoTables(fake_bigquery_tables.FakeBigQueryTables):
     assert table_spec.table_type == table_types.TableType.TKO_JOBS
     super(FakeBigQueryTkoTables, self).__init__(table_spec, tables)
 
-  def QueryAllTkoTestIds(self, table_suffix):
-    """Queries IDs of all TKO test entries in a table."""
-    test_ids = []
+  def QueryTkoTestStatuses(self, table_suffix):
+    """Queries invalidation statuses of TKO tests in a table."""
+    tests = []
     table_name = self._table_spec.table_prefix + table_suffix
     entries = self.tables.get(table_name, [])
     for entry in entries:
       for test in entry['tests']:
-        test_ids.append(test['tko_test_id'])
-    return test_ids
+        tests.append((test['tko_test_id'], test['invalid']))
+    return tests
 
   def InvalidateTkoTests(self, table_suffix, invalid_tko_test_ids):
     """Invalidates TKO test entries in a table."""

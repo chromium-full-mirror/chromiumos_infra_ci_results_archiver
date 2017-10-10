@@ -12,10 +12,11 @@ from google.cloud import bigquery  # pylint: disable=import-error,no-name-in-mod
 from ci_results_archiver import table_types
 from ci_results_archiver.utils import bigquery_tables
 
-# Query to get a list of TKO test IDs.
-_TKO_TEST_IDS_QUERY = """
+# Query to get a list of TKO test statuses.
+_TKO_TEST_STATUSES_QUERY = """
 SELECT
-  t.tko_test_id
+  t.tko_test_id,
+  t.invalid
 FROM
   `%s` AS j,
   j.tests AS t
@@ -54,31 +55,27 @@ class BigQueryTkoTables(bigquery_tables.BigQueryTables):
     assert table_spec.table_type == table_types.TableType.TKO_JOBS
     super(BigQueryTkoTables, self).__init__(bigquery_wrapper, table_spec)
 
-  def QueryAllTkoTestIds(self, table_suffix):
-    """Queries IDs of all TKO test entries in a table.
-
-    This method is valid only for TKO tables.
+  def QueryTkoTestStatuses(self, table_suffix):
+    """Queries invalidation statuses of TKO tests in a table.
 
     Args:
       table_suffix: Table name suffix.
 
     Returns:
-      A list of TKO test IDs.
+      A list of tuples: (test ID, invalid).
 
     Raises:
       google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
     """
     table_name = self._table_spec.table_prefix + table_suffix
     rows = self._bigquery_wrapper.RunQuery(
-        _TKO_TEST_IDS_QUERY % table_name,
+        _TKO_TEST_STATUSES_QUERY % table_name,
         timeout_seconds=60,
-        description=('Getting TKO test IDs in %s' % table_name))
-    return [row[0] for row in rows]
+        description=('Getting TKO test statuses in %s' % table_name))
+    return list(rows)
 
   def InvalidateTkoTests(self, table_suffix, invalid_tko_test_ids):
     """Invalidates TKO test entries in a table.
-
-    This method is valid only for TKO tables.
 
     "Invalidation" means setting `invalid` column to TRUE.
 

@@ -120,10 +120,10 @@ class TkoJobTestInvalidatorTestCase(unittest.TestCase):
     }, self.bigquery_tables.tables)
 
   def testAlreadyInvalidated(self):
-    """Invalidates an already-invalidated entry."""
+    """Skips invalidating an already-invalidated entry."""
     table_suffixes = self.modifier.ModifyEntries([212])
 
-    self.assertEquals(['20170402'], sorted(table_suffixes))
+    self.assertEquals([], sorted(table_suffixes))
     self.assertEquals({
         'tko_jobs20170401': [
             {
@@ -187,7 +187,7 @@ class TkoJobTestInvalidatorTestCase(unittest.TestCase):
 
   def testMultiple(self):
     """Invalidates multiple entries in multiple tables."""
-    table_suffixes = self.modifier.ModifyEntries([111, 121, 212])
+    table_suffixes = self.modifier.ModifyEntries([111, 121, 211])
 
     self.assertEquals(['20170401', '20170402'], sorted(table_suffixes))
     self.assertEquals({
@@ -211,7 +211,7 @@ class TkoJobTestInvalidatorTestCase(unittest.TestCase):
             {
                 'tko_job_id': 210,
                 'tests': [
-                    {'tko_test_id': 211, 'invalid': False},
+                    {'tko_test_id': 211, 'invalid': True},
                     {'tko_test_id': 212, 'invalid': True},
                 ],
             },

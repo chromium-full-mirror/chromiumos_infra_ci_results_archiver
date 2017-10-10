@@ -54,8 +54,13 @@ class TkoJobTestInvalidator(abstract_modifier.AbstractModifier):
     modified_table_suffixes = []
 
     for table_suffix in recent_table_suffixes:
-      table_ids = self._bigquery_tables.QueryAllTkoTestIds(table_suffix)
-      hit_id_set = set(table_ids) & invalidating_id_set
+      hit_id_set = set()
+      for test_id, invalid in self._bigquery_tables.QueryTkoTestStatuses(
+          table_suffix):
+        if test_id in invalidating_id_set:
+          if not invalid:
+            hit_id_set.add(test_id)
+          invalidating_id_set.discard(test_id)
       if not hit_id_set:
         logging.info('No test to invalidate in %s.', table_suffix)
       else:
@@ -64,7 +69,6 @@ class TkoJobTestInvalidator(abstract_modifier.AbstractModifier):
         modified_table_suffixes.append(table_suffix)
         logging.info('Invalidated %d tests in %s.',
                      len(hit_id_set), table_suffix)
-      invalidating_id_set -= hit_id_set
       if not invalidating_id_set:
         break
 
