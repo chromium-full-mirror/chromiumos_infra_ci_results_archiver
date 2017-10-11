@@ -70,4 +70,8 @@ if [[ ! -d "${venv_dir}" ]]; then
 fi
 
 export PYTHONPATH="${extra_imports_dir}"
-exec "${venv_dir}/bin/python" "$@"
+
+# Always pass -B option to avoid generating *.pyc files. In particular,
+# on running unit tests on buildbots, *.pyc generation causes problems
+# because write-access to the repository is sandboxed.
+exec "${venv_dir}/bin/python" -B "$@"
