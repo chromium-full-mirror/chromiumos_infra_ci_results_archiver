@@ -7,14 +7,17 @@ tables:
     max_entries: 1000
     grace_period:
      timeout: 10s
+    dump: true
   tko_jobs:
     max_entries: 2000
     grace_period:
       capacity: 200
+    dump: true
   cidb_builds:
     max_entries: 3000
     grace_period:
       timeout: 30s
+    dump: false
 
 databases:
   afe:

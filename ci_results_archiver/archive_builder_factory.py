@@ -79,10 +79,14 @@ def CreateBuilder(table_type, configs):
   exporter = bigquery_exporter.BigQueryExporter(
       bigquery_tables=bigquery_tables, table_spec=table_spec)
 
-  dumper = bigquery_dumper.BigQueryDumper(
-      bigquery_tables=bigquery_tables,
-      table_spec=table_spec,
-      bucket_name=persistent_bucket.name)
+  dump_enabled = configs['tables'][table_type.value].get('dump', True)
+  if dump_enabled:
+    dumper = bigquery_dumper.BigQueryDumper(
+        bigquery_tables=bigquery_tables,
+        table_spec=table_spec,
+        bucket_name=persistent_bucket.name)
+  else:
+    dumper = None
 
   checkpointer = checkpointer_lib.Checkpointer(
       bucket=persistent_bucket,

@@ -109,7 +109,7 @@ class ArchiveBuilder(object):
       importer: AbstractImporter object.
       modifier: AbstractModifier object.
       exporter: BigQueryExporter object.
-      dumper: BigQueryDumper object.
+      dumper: BigQueryDumper object or None.
       checkpointer: Checkpointer object.
     """
     self._table_type = table_type
@@ -155,7 +155,7 @@ class ArchiveBuilder(object):
           updated_table_suffixes.update(exported_table_suffixes)
 
       # Dump updated tables.
-      if updated_table_suffixes:
+      if updated_table_suffixes and self._dumper:
         with timer.Step('dump'):
           self._dumper.DumpTables(list(updated_table_suffixes))
 

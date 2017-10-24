@@ -117,7 +117,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.assertIsInstance(builder._importer,
                           cidb_build_importer.CidbBuildImporter)
     self.assertIs(builder._modifier, None)
-    self.assertIsInstance(builder._dumper, bigquery_dumper.BigQueryDumper)
+    self.assertIs(builder._dumper, None)
     self.assertIsInstance(builder._exporter, bigquery_exporter.BigQueryExporter)
     self.assertIsInstance(builder._checkpointer, checkpointer.Checkpointer)
 
