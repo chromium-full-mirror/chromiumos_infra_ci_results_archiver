@@ -33,6 +33,10 @@ class TkoJobImporterTestCase(unittest.TestCase):
             _CreateTkoJobRow(1000),
             _CreateTkoJobRow(1001),
         ],
+        task_references=[
+            _CreateTkoTaskReferenceRow(1000, 'afe', '1', None),
+            _CreateTkoTaskReferenceRow(1001, 'afe', '2', '3'),
+        ],
         job_keyvals=[
             _CreateTkoJobKeyvalRow(1000, 'B', 'banana'),
             _CreateTkoJobKeyvalRow(1000, 'A', 'apple'),
@@ -52,6 +56,9 @@ class TkoJobImporterTestCase(unittest.TestCase):
             'tko_job_id': 1000,
             'afe_job_id': 123,
             'afe_parent_job_id': 234,
+            'task_reference_type': 'afe',
+            'task_id': '1',
+            'parent_task_id': None,
             'username': 'someone',
             'suite': 'suitename',
             'queued_time': datetime.datetime.fromtimestamp(
@@ -105,6 +112,9 @@ class TkoJobImporterTestCase(unittest.TestCase):
             'tko_job_id': 1001,
             'afe_job_id': 123,
             'afe_parent_job_id': 234,
+            'task_reference_type': 'afe',
+            'task_id': '2',
+            'parent_task_id': '3',
             'username': 'someone',
             'suite': 'suitename',
             'queued_time': datetime.datetime.fromtimestamp(
@@ -265,5 +275,14 @@ def _CreateTkoTestRow(tko_test_id,
 
 def _CreateTkoJobKeyvalRow(tko_job_id, key, value):
   """Creates a row dictionary for _TKO_JOB_KEYVALS_QUERY."""
+  # pylint: disable=unused-argument
+  return dict(locals())
+
+
+def _CreateTkoTaskReferenceRow(tko_job_id,
+                               reference_type='afe',
+                               task_id=None,
+                               parent_task_id=None):
+  """Creates a row dictionary for _TKO_TASK_REFERENCE_QUERY."""
   # pylint: disable=unused-argument
   return dict(locals())

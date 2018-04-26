@@ -17,15 +17,21 @@ class FakeTkoConnection(object):
     tests: List of test dictionaries.
   """
 
-  def __init__(self, jobs=None, job_keyvals=None, tests=None):
+  def __init__(self,
+               jobs=None,
+               task_references=None,
+               job_keyvals=None,
+               tests=None):
     """Constructor.
 
     Attributes:
       jobs: List of job dictionaries.
+      task_references: List of task reference dictionaries.
       job_keyvals: List of job keyval dictionaries.
       tests: List of test dictionaries.
     """
     self.jobs = jobs or []
+    self.task_references = task_references or []
     self.job_keyvals = job_keyvals or []
     self.tests = tests or []
 
@@ -51,3 +57,9 @@ class FakeTkoConnection(object):
     """Retrieves TKO test rows from the local database."""
     tests = [test for test in self.tests if test['tko_job_id'] in tko_job_ids]
     return tests
+
+  def QueryTaskReferences(self, tko_job_ids):
+    """Retrieves TKO task references from the TKO database."""
+    return [
+        tr for tr in self.task_references if tr['tko_job_id'] in tko_job_ids
+    ]

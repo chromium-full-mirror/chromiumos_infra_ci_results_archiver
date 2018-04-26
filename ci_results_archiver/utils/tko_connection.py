@@ -50,6 +50,17 @@ FROM
 ;
 """
 
+# MySQL query used to retrieve TKO jobs' task references.
+_TKO_TASK_REFERENCE_QUERY = """
+SELECT
+  t.tko_job_idx as tko_job_id,
+  t.reference_type,
+  t.task_id,
+  t.parent_task_id
+FROM tko_task_references t
+WHERE tko_job_idx in %(tko_job_ids)s
+;
+"""
 # MySQL query used to retrieve TKO tests.
 _TKO_TESTS_QUERY = """
 SELECT
@@ -179,3 +190,20 @@ class TkoConnection(object):
         query=_TKO_TESTS_QUERY,
         params={'tko_job_ids': tko_job_ids},
         description='Dumping TKO tests')
+
+  def QueryTaskReferences(self, tko_job_ids):
+    """Retrieves TKO task references from the TKO database.
+
+    Args:
+      tko_job_ids: A list of TKO job ids to retrieve task references for.
+
+    Returns:
+      A list of dictionaries representing task references.
+
+    Raises:
+      MySQLdb.Error: On MySQL errors.
+    """
+    return self._mysql_wrapper.RunQuery(
+        query=_TKO_TASK_REFERENCE_QUERY,
+        params={'tko_job_ids': tko_job_ids},
+        description='Dumping TKO task references')

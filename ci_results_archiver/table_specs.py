@@ -93,8 +93,13 @@ TKO_JOBS = TableSpec(
     insertion_timestamp_column=None,
     schema=[
         bigquery.SchemaField('tko_job_id', 'INTEGER', 'NULLABLE'),
+        # Deprecated. Use task_id instead.
         bigquery.SchemaField('afe_job_id', 'INTEGER', 'NULLABLE'),
+        # Deprecated. Use parent_task_id instead.
         bigquery.SchemaField('afe_parent_job_id', 'INTEGER', 'NULLABLE'),
+        bigquery.SchemaField('task_reference_type', 'STRING', 'NULLABLE'),
+        bigquery.SchemaField('task_id', 'STRING', 'NULLABLE'),
+        bigquery.SchemaField('parent_task_id', 'STRING', 'NULLABLE'),
         bigquery.SchemaField('username', 'STRING', 'NULLABLE'),
         bigquery.SchemaField('suite', 'STRING', 'NULLABLE'),
         bigquery.SchemaField('queued_time', 'TIMESTAMP', 'NULLABLE'),

@@ -31,6 +31,7 @@ class TkoJobImporter(abstract_importer.AbstractImporter):
     if not job_map:
       return [], [], next_id
 
+    self._SetTaskReferences(job_map)
     job_keyvals_map = self._QueryJobKeyvalsMap(job_map.keys())
     tests_map = self._QueryTestsMap(job_map.keys())
 
@@ -62,6 +63,23 @@ class TkoJobImporter(abstract_importer.AbstractImporter):
     jobs = self._grace_period.FilterEntries(jobs)
 
     return {job['tko_job_id']: job for job in jobs}
+
+  def _SetTaskReferences(self, job_map):
+    """Retrieves TKO task references from the TKO database and updates job_map.
+
+    Args:
+      job_map: A dictionary whose key is a job ID and value is a job dictionary.
+
+    Raises:
+      MySQLdb.Error: On MySQL errors.
+    """
+    task_references = self._tko.QueryTaskReferences(job_map.keys())
+    for task_reference in task_references:
+      job_id = task_reference['tko_job_id']
+      job = job_map[job_id]
+      job['task_reference_type'] = task_reference['reference_type']
+      job['task_id'] = task_reference['task_id']
+      job['parent_task_id'] = task_reference['parent_task_id']
 
   def _QueryJobKeyvalsMap(self, job_ids):
     """Retrieves TKO job keyvals from the TKO database.
