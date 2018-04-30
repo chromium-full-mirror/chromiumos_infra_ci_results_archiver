@@ -39,18 +39,21 @@ class BigQueryExporter(object):
       entries: A list of dictionaries representing entries.
 
     Returns:
-      A list of name suffixes of updated BigQuery tables.
+      (exported_table_suffixes, unexported_entries) where:
+          exported_table_suffixes: A list of name suffixes of updated BigQuery
+              tables.
+          unexported_entries: Entries that could not be exported to bigquery.
     """
     if not entries:
-      return []
-    entries_by_date = _PartitionByDate(
+      return [], []
+    entries_by_date, unpartitioned_entries = _PartitionByDate(
         entries, self._table_spec.partition_timestamp_column)
     exported_table_suffixes = []
     for date, entries_in_date in sorted(entries_by_date.items()):
       table_suffix = date.strftime('%Y%m%d')
       self._ExportNewEntriesToTable(table_suffix, entries_in_date)
       exported_table_suffixes.append(table_suffix)
-    return exported_table_suffixes
+    return exported_table_suffixes, unpartitioned_entries
 
   def _ExportNewEntriesToTable(self, table_suffix, entries):
     """Exports new entries to a specified BigQuery table.
@@ -81,13 +84,21 @@ def _PartitionByDate(entries, timestamp_column):
       entries.
 
   Returns:
-    {date: entries_in_date} where:
+    ({date: entries_in_date}, unpartitioned_entries) where:
       date: datetime.date object.
       entries_in_date: A list of dictionaries representing entries in the
           corresponding date.
+      unpartitioned_entries: A list of entries that could not be partitioned
+          into any table. This can happen if the column used to partition the
+          entries is unset.
   """
   entries_by_date = collections.defaultdict(list)
+  unpartitioned_entries = []
   for entry in entries:
-    date = entry[timestamp_column].date()
+    entry_timestamp = entry.get(timestamp_column)
+    if not entry_timestamp:
+      unpartitioned_entries.append(entry)
+      continue
+    date = entry_timestamp.date()
     entries_by_date[date].append(entry)
-  return dict(entries_by_date)
+  return dict(entries_by_date), unpartitioned_entries

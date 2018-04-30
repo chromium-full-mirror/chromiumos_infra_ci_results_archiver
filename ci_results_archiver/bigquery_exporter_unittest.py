@@ -35,7 +35,7 @@ class BigQueryExporterTestCase(unittest.TestCase):
 
   def testNew(self):
     """All entries are new."""
-    table_suffixes = self.exporter.ExportNewEntries([
+    table_suffixes, _ = self.exporter.ExportNewEntries([
         {
             'afe_job_id': 111,
             'created_on': APR_1,
@@ -76,7 +76,7 @@ class BigQueryExporterTestCase(unittest.TestCase):
         ],
     }
 
-    table_suffixes = self.exporter.ExportNewEntries([
+    table_suffixes, _ = self.exporter.ExportNewEntries([
         {
             'afe_job_id': 111,
             'created_on': APR_1,
@@ -112,3 +112,32 @@ class BigQueryExporterTestCase(unittest.TestCase):
             },
         ],
     }, self.bigquery_tables.tables)
+
+  def testFailToPartitionEntries(self):
+    """Some entries fail to be partitioned."""
+    table_suffixes, unexported = self.exporter.ExportNewEntries([
+        {
+            'afe_job_id': 111,
+            'created_on': APR_1,
+        },
+        {
+            'afe_job_id': 222,
+        },
+        {
+            'afe_job_id': 333,
+            'created_on': None,
+        },
+        {
+            'afe_job_id': 444,
+            'created_on': '',
+        },
+    ])
+
+    self.assertEquals(['20170401'], sorted(table_suffixes))
+    self.assertEquals({
+        'afe_jobs20170401': [{
+            'afe_job_id': 111,
+            'created_on': APR_1,
+        }],
+    }, self.bigquery_tables.tables)
+    self.assertEquals({222, 333, 444}, {e['afe_job_id'] for e in unexported})

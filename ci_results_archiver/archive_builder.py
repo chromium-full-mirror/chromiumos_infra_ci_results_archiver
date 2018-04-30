@@ -151,8 +151,11 @@ class ArchiveBuilder(object):
       # ID).
       if entries:
         with timer.Step('export'):
-          exported_table_suffixes = self._exporter.ExportNewEntries(entries)
-          updated_table_suffixes.update(exported_table_suffixes)
+          table_suffixes, unexported = self._exporter.ExportNewEntries(entries)
+          updated_table_suffixes.update(table_suffixes)
+          if unexported:
+            metrics.Counter('%s/failed_export_count' %
+                            metric_prefix).increment_by(len(unexported))
 
       # Dump updated tables.
       if updated_table_suffixes and self._dumper:
