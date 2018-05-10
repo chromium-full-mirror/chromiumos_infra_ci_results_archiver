@@ -12,7 +12,7 @@ import json
 import unittest
 
 from google.cloud import bigquery  # pylint: disable=import-error,no-name-in-module
-from google.cloud import storage  # pylint: disable=import-error,no-name-in-module
+from google.cloud.storage import bucket  # pylint: disable=import-error,no-name-in-module
 import mock
 import pytz
 
@@ -28,13 +28,11 @@ class BigQueryWrapperTestCase(unittest.TestCase):
     """Setup."""
     self._bigquery_client = mock.Mock(bigquery.Client)
     self._dataset = self._bigquery_client.dataset.return_value
-    self._storage_client = mock.Mock(storage.Client)
-    self._bucket = self._storage_client.bucket.return_value
+    self._bucket = mock.Mock(bucket.Bucket)
 
     self._wrapper = bigquery_wrapper.BigQueryWrapper(
         bigquery_client=self._bigquery_client,
         dataset=self._dataset,
-        storage_client=self._storage_client,
         bucket=self._bucket)
 
   def testTableExists(self):

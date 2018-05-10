@@ -32,18 +32,16 @@ class BigQueryError(Exception):
 class BigQueryWrapper(object):
   """Simple wrapper of google.cloud.bigquery.Client object."""
 
-  def __init__(self, bigquery_client, dataset, storage_client, bucket):
+  def __init__(self, bigquery_client, dataset, bucket):
     """Initializes the wrapper.
 
     Args:
       bigquery_client: google.cloud.bigquery.Client object.
       dataset: google.cloud.bigquery.Dataset object.
-      storage_client: google.cloud.storage.Client object.
       bucket: google.cloud.storage.Bucket object.
     """
     self._bigquery_client = bigquery_client
     self._dataset = dataset
-    self._storage_client = storage_client
     self._bucket = bucket
 
   def TableExists(self, table_name):

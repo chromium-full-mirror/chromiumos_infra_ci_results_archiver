@@ -58,10 +58,7 @@ def CreateBuilder(table_type, configs):
       configs['cloud_storage']['persistent_bucket'])
 
   bigquery_wrapper = bigquery_wrapper_lib.BigQueryWrapper(
-      bigquery_client=bigquery_client,
-      dataset=dataset,
-      storage_client=storage_client,
-      bucket=temporary_bucket)
+      bigquery_client=bigquery_client, dataset=dataset, bucket=temporary_bucket)
 
   if table_type == table_types.TableType.TKO_JOBS:
     bigquery_tables = bigquery_tko_tables.BigQueryTkoTables(
