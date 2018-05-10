@@ -44,10 +44,11 @@ class MySQLWrapperTestCase(unittest.TestCase):
         {'id': 2, 'fruit': 'banana'},
     ]
 
-    rows = self._wrapper.RunQuery('query', 'description', params=('a', 'b'))
+    rows = self._wrapper.RunQuery(
+        'query %s %s', 'description', params=('a', 'b'))
 
     self._conn.cursor.assert_called_with(MySQLdb.cursors.DictCursor)
-    self._cursor.execute.assert_called_with('query', ('a', 'b'))
+    self._cursor.execute.assert_called_with('query %s %s', ('a', 'b'))
     self.assertEqual(rows, [
         {'id': 1, 'fruit': 'apple'},
         {'id': 2, 'fruit': 'banana'},

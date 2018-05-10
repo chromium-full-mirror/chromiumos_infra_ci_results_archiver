@@ -7,6 +7,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
+
 from ci_results_archiver.importers import abstract_importer
 
 
@@ -60,7 +62,11 @@ class TkoJobImporter(abstract_importer.AbstractImporter):
     jobs = self._tko.QueryJobs(
         tko_job_id_start=next_id, limit=self._max_entries)
 
+    num_unfiltered_jobs = len(jobs)
     jobs = self._grace_period.FilterEntries(jobs)
+    logging.debug(
+        'Filtered down TKO jobs from %d to %d due to missing entries.',
+        num_unfiltered_jobs, len(jobs))
 
     return {job['tko_job_id']: job for job in jobs}
 

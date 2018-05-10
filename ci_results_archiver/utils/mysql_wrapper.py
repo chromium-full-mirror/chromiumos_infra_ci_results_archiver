@@ -73,7 +73,8 @@ class MySQLWrapper(object):
       MySQLdb.Error: On MySQL errors.
     """
     logging.info('Running MySQL query: %s', description)
-    logging.debug('Query: %s', query)
+    query_str = query % params if params else query
+    logging.debug('Query: %s', query_str)
 
     def DoRunQuery():
       """Actually runs a query."""
