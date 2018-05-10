@@ -128,7 +128,8 @@ class BigQueryWrapperTestCase(unittest.TestCase):
     job.state = 'DONE'
     job.error_result = None
 
-    schema = object()
+    self._dataset.table('table').schema = []
+    schema = []
     entries = [
         {
             'id': 1,
@@ -173,18 +174,35 @@ class BigQueryWrapperTestCase(unittest.TestCase):
     """LoadEntries() aborts on errors."""
     self._bucket.name = 'bucket'
     self._dataset.name = 'dataset'
+    self._dataset.table('table').schema = []
 
     job = self._bigquery_client.load_table_from_storage.return_value
     job.state = 'DONE'
     job.error_result = [{'message': 'error'}]
 
-    schema = object()
+    schema = []
     entries = [
         {'id': 1, 'fruit': 'apple'},
         {'id': 2, 'fruit': 'banana'},
     ]
     with self.assertRaises(bigquery_wrapper.BigQueryError):
       self._wrapper.LoadEntries('table', schema, entries, job_name='job_name')
+
+  def testLoadEntriesPatchTableSchema(self):
+    """LoadEntries() patches table schema on new columns"""
+    self._bucket.name = 'bucket'
+    self._dataset.name = 'dataset'
+    self._dataset.table('table').schema = []
+
+    job = self._bigquery_client.load_table_from_storage.return_value
+    job.state = 'DONE'
+    job.error_result = None
+
+    schema = ['new_column']
+    entries = []
+    self._wrapper.LoadEntries('table', schema, entries, job_name='job_name')
+    self._dataset.table('table').patch.assert_called_once_with(
+        mock.ANY, schema=['new_column'])
 
 
 class FakeFetchDataIterable(list):

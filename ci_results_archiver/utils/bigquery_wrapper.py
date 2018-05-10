@@ -138,6 +138,7 @@ class BigQueryWrapper(object):
     json_path = 'loads/%s/%s/data.json' % (self._dataset.name, job_name)
 
     self._UploadEntriesToGs(entries, json_path)
+    self._MaybePatchSchema(table_name, schema)
     job = self._CreateLoadJobFromGs(json_path, schema, table_name, job_name)
     self._StartAndWaitForJobCompletion(job)
 
@@ -195,6 +196,21 @@ class BigQueryWrapper(object):
     job.source_format = 'NEWLINE_DELIMITED_JSON'
     job.schema = schema
     return job
+
+  def _MaybePatchSchema(self, table_name, schema):
+    """Patches the table schema for the given table if needed.
+
+    Args:
+      table_name: Table to update.
+      schema: The new schema as a list of SchemaField.
+    """
+    table = self._dataset.table(table_name)
+    old_schema = set(table.schema)
+    new_schema = set(schema)
+    if old_schema - new_schema:
+      raise BigQueryError('Can not delete columns %s', old_schema - new_schema)
+    if new_schema - old_schema:
+      table.patch(self._bigquery_client, schema=schema)
 
   def _CreateExportJob(self, table_name, url, job_name):
     """Creates a new export job.
