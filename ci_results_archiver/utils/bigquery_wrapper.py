@@ -32,13 +32,13 @@ class BigQueryError(Exception):
 class BigQueryWrapper(object):
   """Simple wrapper of google.cloud.bigquery.Client object."""
 
-  def __init__(self, bigquery_client, dataset, bucket):
+  def __init__(self, bigquery_client, dataset, bucket=None):
     """Initializes the wrapper.
 
     Args:
       bigquery_client: google.cloud.bigquery.Client object.
       dataset: google.cloud.bigquery.Dataset object.
-      bucket: google.cloud.storage.Bucket object.
+      bucket: (Optional) google.cloud.storage.Bucket object.
     """
     self._bigquery_client = bigquery_client
     self._dataset = dataset
@@ -129,6 +129,10 @@ class BigQueryWrapper(object):
     Raises:
       google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
     """
+    if self._bucket is None:
+      raise BigQueryError(
+          'GS bucket not provided at object creation to stage entries')
+
     if job_name is None:
       job_name = 'load_%s_%s_%s' % (
           self._dataset.name, table_name,
