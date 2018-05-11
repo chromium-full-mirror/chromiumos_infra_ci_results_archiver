@@ -249,13 +249,29 @@ class BigQueryWrapper(object):
       table_name: Table to update.
       schema: The new schema as a list of SchemaField.
     """
-    table = self._dataset.table(table_name)
-    old_schema = set(table.schema)
-    new_schema = set(schema)
-    if old_schema - new_schema:
-      raise BigQueryError('Can not delete columns %s', old_schema - new_schema)
-    if new_schema - old_schema:
+    if self._ShouldPatchSchema(table_name, schema):
+      table = self._dataset.table(table_name)
       table.patch(self._bigquery_client, schema=schema)
+
+  def _ShouldPatchSchema(self, table_name, schema):
+    """Decide whether we should patch the schema of the given table.
+
+    Args:
+      table_name: Table to update.
+      schema: The new schema as a list of SchemaField.
+
+    Returns:
+      True if we should patch schema, False otherwise.
+    """
+    old_schema = self.TableSchema(table_name)
+    # bigquery.schema.SchemaField are not hashable. We take the easy path and
+    # patch the table as long *any* fields are different.
+    if len(old_schema) != len(schema):
+      return True
+    for i in xrange(len(old_schema)):
+      if old_schema[i] != schema[i]:
+        return True
+    return False
 
   def _CreateExportJob(self, table_name, url, job_name):
     """Creates a new export job.
