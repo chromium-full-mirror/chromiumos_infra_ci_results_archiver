@@ -58,6 +58,19 @@ class BigQueryWrapper(object):
     """
     return self._dataset.table(table_name).exists()
 
+  def TableSchema(self, table_name):
+    """Returns the table schema as a list.
+
+    Args:
+      table_name: Table name.
+
+    Returns:
+      Table schema as a list. Returns [] for non-existent tables.
+    """
+    table = self._dataset.table(table_name)
+    table.reload()
+    return table.schema
+
   def ListTableNames(self):
     """Retrieves a list of table names.
 
@@ -121,7 +134,8 @@ class BigQueryWrapper(object):
       raise BigQueryError('No table to copy from')
 
     src_tables = [self._dataset.table(t) for t in src_table_names]
-    dst_table = self._dataset.table(dst_table_name, schema=src_tables[0].schema)
+    dst_table = self._dataset.table(dst_table_name,
+                                    self.TableSchema(src_table_names[0]))
     job_name = 'copy_into_%s_%s_%s' % (
         self._dataset.name, dst_table_name,
         datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f'))
