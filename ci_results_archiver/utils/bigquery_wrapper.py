@@ -140,7 +140,8 @@ class BigQueryWrapper(object):
     json_path = 'loads/%s/%s/data.json' % (self._dataset.name, job_name)
 
     self._UploadEntriesToGs(entries, json_path)
-    self._MaybePatchSchema(table_name, schema)
+    if self.TableExists(table_name):
+      self._MaybePatchSchema(table_name, schema)
     job = self._CreateLoadJobFromGs(json_path, schema, table_name, job_name)
     self._StartAndWaitForJobCompletion(job)
 

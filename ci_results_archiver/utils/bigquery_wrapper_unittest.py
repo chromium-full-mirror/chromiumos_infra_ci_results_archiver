@@ -190,6 +190,7 @@ class BigQueryWrapperTestCase(unittest.TestCase):
     """LoadEntries() patches table schema on new columns"""
     self._bucket.name = 'bucket'
     self._dataset.name = 'dataset'
+    self._dataset.table('table').exists.return_value = True
     self._dataset.table('table').schema = []
 
     job = self._bigquery_client.load_table_from_storage.return_value
@@ -201,6 +202,22 @@ class BigQueryWrapperTestCase(unittest.TestCase):
     self._wrapper.LoadEntries('table', schema, entries, job_name='job_name')
     self._dataset.table('table').patch.assert_called_once_with(
         mock.ANY, schema=['new_column'])
+
+  def testLoadEntriesNoPatchNewTable(self):
+    """LoadEntries() does not patch table schema on new table"""
+    self._bucket.name = 'bucket'
+    self._dataset.name = 'dataset'
+    self._dataset.table('table').exists.return_value = False
+    self._dataset.table('table').schema = []
+
+    job = self._bigquery_client.load_table_from_storage.return_value
+    job.state = 'DONE'
+    job.error_result = None
+
+    schema = ['new_column']
+    entries = []
+    self._wrapper.LoadEntries('table', schema, entries, job_name='job_name')
+    self.assertEqual(self._dataset.table('table').patch.call_count, 0)
 
 
 class FakeFetchDataIterable(list):
