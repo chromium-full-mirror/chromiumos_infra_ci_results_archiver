@@ -152,6 +152,16 @@ class BigQueryWrapper(object):
     table = self._dataset.table(table_name)
     table.delete()
 
+  def PatchSchema(self, table_name, schema):
+    """Patches the table schema for the given table.
+
+    Args:
+      table_name: Table to update.
+      schema: The new schema as a list of SchemaField.
+    """
+    table = self._dataset.table(table_name)
+    table.patch(self._bigquery_client, schema=schema)
+
   def LoadEntries(self, table_name, schema, entries, job_name=None):
     """Loads entries into a table.
 
@@ -182,8 +192,8 @@ class BigQueryWrapper(object):
     json_path = 'loads/%s/%s/data.json' % (self._dataset.name, job_name)
 
     self._UploadEntriesToGs(entries, json_path)
-    if self.TableExists(table_name):
-      self._MaybePatchSchema(table_name, schema)
+    if self._ShouldPatchSchema(table_name, schema):
+      self.PatchSchema(table_name, schema)
     job = self._CreateLoadJobFromGs(json_path, schema, table_name, job_name)
     self._StartAndWaitForJobCompletion(job)
 
@@ -242,17 +252,6 @@ class BigQueryWrapper(object):
     job.schema = schema
     return job
 
-  def _MaybePatchSchema(self, table_name, schema):
-    """Patches the table schema for the given table if needed.
-
-    Args:
-      table_name: Table to update.
-      schema: The new schema as a list of SchemaField.
-    """
-    if self._ShouldPatchSchema(table_name, schema):
-      table = self._dataset.table(table_name)
-      table.patch(self._bigquery_client, schema=schema)
-
   def _ShouldPatchSchema(self, table_name, schema):
     """Decide whether we should patch the schema of the given table.
 
@@ -263,6 +262,8 @@ class BigQueryWrapper(object):
     Returns:
       True if we should patch schema, False otherwise.
     """
+    if not self.TableExists(table_name):
+      return False
     old_schema = self.TableSchema(table_name)
     # bigquery.schema.SchemaField are not hashable. We take the easy path and
     # patch the table as long *any* fields are different.
