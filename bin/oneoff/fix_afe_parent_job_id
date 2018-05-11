@@ -1,0 +1,12 @@
+#!/bin/bash
+# Copyright 2017 The Chromium OS Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# The launch script of ci_results_archiver.
+set -eu
+
+readonly bin_dir="$(dirname "$(dirname "$(readlink -e -- "$0")")")"
+
+exec "${bin_dir}/python_venv" \
+    -m ci_results_archiver.contrib.oneoff.fix_afe_parent_job_id "$@"

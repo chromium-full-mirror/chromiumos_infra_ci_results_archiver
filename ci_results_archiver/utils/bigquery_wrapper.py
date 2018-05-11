@@ -110,6 +110,34 @@ class BigQueryWrapper(object):
                  results.total_bytes_processed, len(rows))
     return rows
 
+  def CopyTable(self, dst_table_name, *src_table_names):
+    """Copy data from multiple tables into a new one.
+
+    Args:
+      dst_table_name: Name of the new table to create.
+      *src_table_names: Names of tables to copy data from.
+    """
+    if not src_table_names:
+      raise BigQueryError('No table to copy from')
+
+    src_tables = [self._dataset.table(t) for t in src_table_names]
+    dst_table = self._dataset.table(dst_table_name, schema=src_tables[0].schema)
+    job_name = 'copy_into_%s_%s_%s' % (
+        self._dataset.name, dst_table_name,
+        datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f'))
+    # pylint: disable=star-args
+    job = self._bigquery_client.copy_table(job_name, dst_table, *src_tables)
+    self._StartAndWaitForJobCompletion(job)
+
+  def DeleteTable(self, table_name):
+    """Delete a table.
+
+    Args:
+      table_name: Name of the table to delete.
+    """
+    table = self._dataset.table(table_name)
+    table.delete()
+
   def LoadEntries(self, table_name, schema, entries, job_name=None):
     """Loads entries into a table.
 
