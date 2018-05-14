@@ -65,7 +65,10 @@ class BigQueryWrapper(object):
       table_name: Table name.
 
     Returns:
-      Table schema as a list. Returns [] for non-existent tables.
+      Table schema as a list.
+
+    Raises:
+      google.cloud.exceptions.NotFound if the table does not exist.
     """
     table = self._dataset.table(table_name)
     table.reload()
