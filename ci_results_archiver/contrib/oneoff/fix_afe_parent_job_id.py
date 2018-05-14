@@ -38,6 +38,7 @@ def main():
       description='Replace tko_jobs.afe_parent_job_id 0 vaules with NULL')
   common.ParserAddOneoffArgs(parser)
   options = parser.parse_args()
+  common.DisplayWarningAndConfirm(options)
 
   table_updater = common.TableUpdater(options)
   table_updater.Execute(_FixupTable)

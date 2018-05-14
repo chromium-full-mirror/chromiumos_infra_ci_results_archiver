@@ -9,11 +9,18 @@ from __future__ import print_function
 
 import contextlib
 import logging
+import sys
 import time
 
 from google.cloud import bigquery  # pylint: disable=import-error,no-name-in-module
 
 from ci_results_archiver.utils import bigquery_wrapper
+
+_CONCURENT_RUN_CONFIRMATION_MSG = """
+One off table update tasks are in general not safe to be run concurrently with
+ci_results_archiver, or with each other because they copy / modify tables and
+this may interfere with other updates.
+Please temporarily disable ci_results_archiver when running these tasks."""
 
 
 class OneoffError(Exception):
@@ -22,6 +29,15 @@ class OneoffError(Exception):
 
 class TableUnchanged(Exception):
   """Exception used to indicate that a table update was a no-op."""
+
+
+def DisplayWarningAndConfirm(options):
+  """Spew some common warnings about oneoff tasks."""
+  logging.warning(_CONCURENT_RUN_CONFIRMATION_MSG)
+  if options.confirm_run:
+    logging.info('Accepting confirmation provided in command line.')
+  else:
+    _ConfirmOrRaise()
 
 
 def ParserAddOneoffArgs(parser):
@@ -47,6 +63,12 @@ def ParserAddOneoffArgs(parser):
   subparser.add_argument(
       '--gs-dump-bucket',
       help='(Optional) GS path containing dumped tables to be updated.')
+  subparser.add_argument(
+      '--confirm-run',
+      default=False,
+      action='store_true',
+      help='Confirm that you are aware of concurrent run issues.'
+      ' Instructs the task to not prompt for stding confirmation.')
 
 
 class TableUpdater(object):
@@ -138,3 +160,11 @@ class TableUpdater(object):
     url = 'gs://%s/archives/%s.json.gz' % (self._gs_dump_bucket, table_name)
     self._bq_wrapper.ExportToStorage(table_name, url)
     logging.info('Successfully dumped table %s.%s', self._dataset, table_name)
+
+
+def _ConfirmOrRaise():
+  """Get a confirmation from user on stdin, or raise."""
+  logging.warning('Continue? [y/n]')
+  confirmation = sys.stdin.readline().strip()
+  if confirmation.lower() not in {'y', 'yes', 'true', 't', '1'}:
+    raise OneoffError('User aborted run')

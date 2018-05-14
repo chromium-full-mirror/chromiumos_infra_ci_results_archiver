@@ -47,6 +47,7 @@ def main():
   parser = argparse.ArgumentParser(description='Backfill tko_task_references')
   common.ParserAddOneoffArgs(parser)
   options = parser.parse_args()
+  common.DisplayWarningAndConfirm(options)
 
   table_updater = common.TableUpdater(options)
   table_updater.Execute(_FixupTable)
