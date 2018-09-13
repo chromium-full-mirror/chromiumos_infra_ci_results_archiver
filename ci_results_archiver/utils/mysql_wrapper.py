@@ -36,7 +36,8 @@ class MySQLWrapper(object):
     """Connects to the database.
 
     Args:
-      hostname: MySQL server hostname.
+      hostname: MySQL server hostname or an absolute path starting with / to a
+          Unix socket to connect to.
       username: MySQL server username.
       password: MySQL server password.
       database: MySQL server database name.
@@ -45,7 +46,7 @@ class MySQLWrapper(object):
     Raises:
       MySQLdb.Error: On MySQL errors.
     """
-    self._hostname = hostname
+    self._hostname_or_socket = hostname
     self._username = username
     self._password = password
     self._database = database
@@ -110,14 +111,23 @@ class MySQLWrapper(object):
     Raises:
       MySQLdb.Error: On MySQL errors.
     """
-    self._conn = MySQLdb.connect(
-        host=self._hostname,
-        user=self._username,
-        passwd=self._password,
-        db=self._database,
-        charset='utf8',
-        use_unicode=True,
-        conv=self._conversions)
+    kwargs = {
+        'user': self._username,
+        'passwd': self._password,
+        'db': self._database,
+        'charset': 'utf8',
+        'use_unicode': True,
+        'conv': self._conversions,
+    }
+    # We regard |self._hostname_or_socket| as a Unix socket when it starts with
+    # '/' in order to be compatible with Django.
+    if self._hostname_or_socket.startswith('/'):
+      kwargs['unix_socket'] = self._hostname_or_socket
+    else:
+      kwargs['host'] = self._hostname_or_socket
+
+    self._conn = MySQLdb.connect(**kwargs)
+
     # Set session timezone to UTC.
     self._conn.cursor().execute('SET time_zone = "+0:00"')
 
