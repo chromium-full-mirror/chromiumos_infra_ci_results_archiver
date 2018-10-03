@@ -7,7 +7,7 @@ This schema definition is part of chromeos-infra's API to downstream result
 consumers.
 
 The usual rules of API data definitions apply here. To make our life easy:
- - No field should be required
+ - No field should be required.
  - No field should ever be removed.
  - No field should have its type (BigQuery type) changed.
 
@@ -157,6 +157,7 @@ CIDB_BUILDS = TableSpec(
         bigquery.SchemaField('important', 'BOOLEAN', 'NULLABLE'),
         bigquery.SchemaField('buildbucket_id', 'STRING', 'NULLABLE'),
         bigquery.SchemaField('deadline', 'TIMESTAMP', 'NULLABLE'),
+        bigquery.SchemaField('branch', 'STRING', 'NULLABLE'),
     ])
 
 _ALL_SPECS = (AFE_JOBS, TKO_JOBS, CIDB_BUILDS)

@@ -27,6 +27,7 @@ _CIDB_COLUMN_MAP = {
     'important': 'important',
     'buildbucket_id': 'buildbucket_id',
     'deadline': 'deadline',
+    'branch': 'branch',
 }
 
 
