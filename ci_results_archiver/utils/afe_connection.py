@@ -71,6 +71,51 @@ WHERE
 ;
 """
 
+# MySQL query used to retrieve AFE special tasks.
+_AFE_SPECIAL_TASKS_QUERY = """
+SELECT
+  t.id AS afe_special_task_id,
+  t.host_id,
+  h.hostname,
+  h.status,
+  t.task,
+  t.is_active,
+  t.is_complete,
+  t.time_started,
+  t.time_finished,
+  t.success
+FROM afe_special_tasks AS t
+  INNER JOIN afe_hosts AS h ON h.id = t.host_id
+WHERE t.id >= %(afe_special_task_id_start)s
+  AND h.invalid = 0
+ORDER BY t.id ASC
+LIMIT %(limit)s
+;
+"""
+
+# MySQL query used to retrieve AFE host labels.
+_AFE_HOSTS_LABELS_QUERY = """
+SELECT
+  hosts_labels.host_id,
+  label.name
+FROM afe_hosts_labels AS hosts_labels
+  INNER JOIN afe_labels AS label ON label.id = hosts_labels.label_id
+WHERE hosts_labels.host_id IN %(afe_host_ids)s
+;
+"""
+
+# MySQL query used to retrieve AFE host attributes.
+_AFE_HOST_ATTRIBUTES_QUERY = """
+SELECT
+  host_id,
+  attribute,
+  value
+FROM afe_host_attributes
+WHERE host_id IN %(afe_host_ids)s
+  AND attribute IN ('HWID', 'serial_number', 'servo_host', 'servo_port')
+;
+"""
+
 
 class AfeConnection(object):
   """Connection to AFE DB.
@@ -139,3 +184,63 @@ class AfeConnection(object):
         query=_AFE_JOB_DEPENDENCY_LABELS_QUERY,
         params={'afe_job_ids': afe_job_ids},
         description='Dumping AFE job dependency labels')
+
+  def QuerySpecialTasks(self, afe_special_task_id_start, limit):
+    """Retrieves AFE special tasks from the AFE database.
+
+    Rows are returned by the ascending order of the ID.
+
+    Args:
+      afe_special_task_id_start: Minimum AFE special task ID.
+      limit: Maximum number of rows returned.
+
+    Returns:
+      A list of dictionaries representing AFE special task rows.
+
+    Raises:
+      MySQLdb.Error: On MySQL errors.
+    """
+    return self._mysql_wrapper.RunQuery(
+        query=_AFE_SPECIAL_TASKS_QUERY,
+        params={
+            'afe_special_task_id_start': afe_special_task_id_start,
+            'limit': limit
+        },
+        description='Dumping AFE special tasks')
+
+  def QueryHostAttributes(self, afe_host_ids):
+    """Retrieves AFE host attribute rows from the AFE database.
+
+    Only the following attributes are returned for a host: HWID, serial_number,
+    servo_host, servo_port.
+
+    Args:
+      afe_host_ids: A list AFE host ids to retrieve host attributes of.
+
+    Returns:
+      A list of dictionaries representing AFE host attribute rows.
+
+    Raises:
+      MySQLdb.Error: On MySQL errors.
+    """
+    return self._mysql_wrapper.RunQuery(
+        query=_AFE_HOST_ATTRIBUTES_QUERY,
+        params={'afe_host_ids': afe_host_ids},
+        description='Dumping AFE host attributes')
+
+  def QueryHostLabels(self, afe_host_ids):
+    """Retrieves AFE host label rows from the AFE database.
+
+    Args:
+      afe_host_ids: A list of AFE host ids to retrieve host labels of.
+
+    Returns:
+      A list of dictionaries representing AFE host label rows.
+
+    Raises:
+      MySQLdb.Error: On MySQL errors.
+    """
+    return self._mysql_wrapper.RunQuery(
+        query=_AFE_HOSTS_LABELS_QUERY,
+        params={'afe_host_ids': afe_host_ids},
+        description='Dumping AFE host labels')
