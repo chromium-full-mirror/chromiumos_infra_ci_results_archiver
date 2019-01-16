@@ -88,7 +88,7 @@ TKO_JOBS = TableSpec(
     table_prefix='tko_jobs',
     id_column='tko_job_id',
     # queued_time matches with afe_jobs.created_on.
-    partition_timestamp_column='queued_time',
+    partition_timestamp_column='partition_timestamp',
     # tko_jobs table does not have an insertion timestamp column.
     insertion_timestamp_column=None,
     schema=[
@@ -102,6 +102,8 @@ TKO_JOBS = TableSpec(
         bigquery.SchemaField('parent_task_id', 'STRING', 'NULLABLE'),
         bigquery.SchemaField('username', 'STRING', 'NULLABLE'),
         bigquery.SchemaField('suite', 'STRING', 'NULLABLE'),
+        # Equals queued_time for AFE jobs and started_time for Skylab tasks
+        bigquery.SchemaField('partition_timestamp', 'TIMESTAMP', 'NULLABLE'),
         bigquery.SchemaField('queued_time', 'TIMESTAMP', 'NULLABLE'),
         bigquery.SchemaField('started_time', 'TIMESTAMP', 'NULLABLE'),
         bigquery.SchemaField('finished_time', 'TIMESTAMP', 'NULLABLE'),

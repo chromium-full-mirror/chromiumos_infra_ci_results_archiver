@@ -26,8 +26,8 @@ _DEFAULT_GRACE_PERIOD = grace_period.GracePeriod(
 class TkoJobImporterTestCase(unittest.TestCase):
   """Unit tests for AfeJobImporter."""
 
-  def testNormal(self):
-    """ImportEntries() works in a usual case."""
+  def testAfeJobs(self):
+    """ImportEntries() works in a usual case with only AFE jobs."""
     tko = fake_tko_connection.FakeTkoConnection(
         jobs=[
             _CreateTkoJobRow(1000),
@@ -61,6 +61,8 @@ class TkoJobImporterTestCase(unittest.TestCase):
             'parent_task_id': None,
             'username': 'someone',
             'suite': 'suitename',
+            'partition_timestamp': datetime.datetime.fromtimestamp(
+                1000000000, pytz.utc),
             'queued_time': datetime.datetime.fromtimestamp(
                 1000000000, pytz.utc),
             'started_time': datetime.datetime.fromtimestamp(
@@ -117,6 +119,8 @@ class TkoJobImporterTestCase(unittest.TestCase):
             'parent_task_id': '3',
             'username': 'someone',
             'suite': 'suitename',
+            'partition_timestamp': datetime.datetime.fromtimestamp(
+                1000000000, pytz.utc),
             'queued_time': datetime.datetime.fromtimestamp(
                 1000000000, pytz.utc),
             'started_time': datetime.datetime.fromtimestamp(
@@ -152,6 +156,76 @@ class TkoJobImporterTestCase(unittest.TestCase):
     ], entries)
     self.assertEquals([], modify_ids)
     self.assertEquals(1002, new_next_id)
+
+  def testSkylabTasks(self):
+    """ImportEntries() works for Skylab jobs."""
+    tko = fake_tko_connection.FakeTkoConnection(
+        jobs=[
+            _CreateTkoJobRow(
+                1000, afe_job_id=None, afe_parent_job_id=None,
+                queued_time=None),
+        ],
+        task_references=[
+            _CreateTkoTaskReferenceRow(1000, 'skylab', '1', None),
+        ],
+        job_keyvals=[
+            _CreateTkoJobKeyvalRow(1000, 'B', 'banana'),
+            _CreateTkoJobKeyvalRow(1000, 'A', 'apple'),
+        ],
+        tests=[
+            _CreateTkoTestRow(10000, 1000),
+        ])
+    importer = tko_job_importer.TkoJobImporter(
+        tko=tko, max_entries=10, grace_period=_DEFAULT_GRACE_PERIOD)
+    entries, modify_ids, new_next_id = importer.ImportEntries(next_id=1000)
+
+    self.assertEquals([
+        {
+            'tko_job_id': 1000,
+            'afe_job_id': None,
+            'afe_parent_job_id': None,
+            'task_reference_type': 'skylab',
+            'task_id': '1',
+            'parent_task_id': None,
+            'username': 'someone',
+            'suite': 'suitename',
+            'partition_timestamp': datetime.datetime.fromtimestamp(
+                1000000100, pytz.utc),
+            'queued_time': None,
+            'started_time': datetime.datetime.fromtimestamp(
+                1000000100, pytz.utc),
+            'finished_time': datetime.datetime.fromtimestamp(
+                1000000200, pytz.utc),
+            'build': 'link/R99-9999.0.0',
+            'build_version': 'R99-9999.0.0',
+            'board': 'link',
+            'hostname': 'somehost',
+            'label': 'somelabel',
+            'tag': 'sometag',
+            'tests': [
+                {
+                    'tko_test_id': 10000,
+                    'test': 'testname',
+                    'status': 'GOOD',
+                    'started_time': datetime.datetime.fromtimestamp(
+                        1000000140, pytz.utc),
+                    'finished_time': datetime.datetime.fromtimestamp(
+                        1000000180, pytz.utc),
+                    'reason': 'Everything went well',
+                    'hostname': 'somehost',
+                    'subdir': 'some/path',
+                    'invalid': False,
+                    'invalidating_tko_test_id': None,
+                },
+            ],
+            'keyvals': [
+                {'key': 'A', 'value': 'apple'},
+                {'key': 'B', 'value': 'banana'},
+            ],
+        },
+    ], entries)
+    self.assertEquals([], modify_ids)
+    self.assertEquals(1001, new_next_id)
 
   def testInvalidation(self):
     """ImportEntries() processes invalidations."""

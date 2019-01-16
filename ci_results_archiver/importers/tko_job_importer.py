@@ -34,6 +34,8 @@ class TkoJobImporter(abstract_importer.AbstractImporter):
       return [], [], next_id
 
     self._SetTaskReferences(job_map)
+    self._SetPartitionTimestamp(job_map)
+
     job_keyvals_map = self._QueryJobKeyvalsMap(job_map.keys())
     tests_map = self._QueryTestsMap(job_map.keys())
 
@@ -86,6 +88,19 @@ class TkoJobImporter(abstract_importer.AbstractImporter):
       job['task_reference_type'] = task_reference['reference_type']
       job['task_id'] = task_reference['task_id']
       job['parent_task_id'] = task_reference['parent_task_id']
+
+  def _SetPartitionTimestamp(self, job_map):
+    """Updates partition_timestamp field in job_map.
+
+    partition_timestamp equals
+    - queued_time for AFE jobs for backwards compatibility,
+    - started_time for Skylab tasks because they do not populate queued_time.
+
+    Args:
+      job_map: A dictionary whose key is a job ID and value is a job dictionary.
+    """
+    for job in job_map.values():
+      job['partition_timestamp'] = job['queued_time'] or job['started_time']
 
   def _QueryJobKeyvalsMap(self, job_ids):
     """Retrieves TKO job keyvals from the TKO database.
