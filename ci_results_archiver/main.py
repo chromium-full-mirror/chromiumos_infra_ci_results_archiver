@@ -54,8 +54,7 @@ def _DaemonMain(run_soon, configs):
   """
   # We do not use ProcessPoolExecutor because its underlying multiprocessing
   # module easily deadlocks on signals.
-  executor = pool_executors.ThreadPoolExecutor(
-      max_workers=len(table_types.TableType))
+  executor = pool_executors.ThreadPoolExecutor(1)
   scheduler = blocking_scheduler.BlockingScheduler(
       executors={'default': executor})
   if run_soon:
@@ -70,13 +69,12 @@ def _DaemonMain(run_soon, configs):
 
   timeout = text_util.ParseTimeDelta(configs['scheduler']['timeout'])
 
-  for table_type in table_types.TableType:
-    scheduler.add_job(
-        name=table_type.value,
-        func=_RunBuilder,
-        kwargs={'table_type': table_type, 'timeout': timeout},
-        trigger=trigger,
-        max_instances=1)
+  scheduler.add_job(
+      name='tko_jobs',
+      func=_RunBuilder,
+      kwargs={'table_type': table_types.TableType.TKO_JOBS, 'timeout': timeout},
+      trigger=trigger,
+      max_instances=1)
 
   try:
     scheduler.start()
@@ -208,7 +206,8 @@ def main():
     if options.one_shot:
       _BuilderMain(table_type=options.table_type, configs=configs)
     else:
-      _DaemonMain(run_soon=options.run_soon, configs=configs)
+      _DaemonMain(run_soon=options.run_soon,
+                  configs=configs)
 
 
 if __name__ == '__main__':
