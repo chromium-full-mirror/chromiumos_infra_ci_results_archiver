@@ -15,6 +15,9 @@ import time
 
 import pytz
 
+from google.cloud import bigquery
+from google.cloud.exceptions import NotFound
+
 
 class BigQueryError(Exception):
   """Represents errors on BigQuery backends."""
@@ -56,7 +59,12 @@ class BigQueryWrapper(object):
     Raises:
       google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
     """
-    return self._dataset.table(table_name).exists()
+    table_ref = self._dataset.table(table_name)
+    try:
+      self._bigquery_client.get_table(table_ref)
+      return True
+    except NotFound:
+      return False
 
   def TableSchema(self, table_name):
     """Returns the table schema as a list.
@@ -68,10 +76,10 @@ class BigQueryWrapper(object):
       Table schema as a list.
 
     Raises:
-      google.cloud.exceptions.NotFound if the table does not exist.
+      google.cloud.exceptions.NotFound: If the table does not exist.
     """
-    table = self._dataset.table(table_name)
-    table.reload()
+    table_ref = self._dataset.table(table_name)
+    table = self._bigquery_client.get_table(table_ref)
     return table.schema
 
   def ListTableNames(self):
@@ -83,9 +91,10 @@ class BigQueryWrapper(object):
     Raises:
       google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
     """
-    return sorted(table.name for table in self._dataset.list_tables())
+    return sorted(table.table_id
+                  for table in self._bigquery_client.list_tables(self._dataset))
 
-  def RunQuery(self, query, timeout_seconds, description, params=()):
+  def RunQuery(self, query, timeout_seconds, description):
     """Runs a query.
 
     Args:
@@ -93,37 +102,35 @@ class BigQueryWrapper(object):
       timeout_seconds: Timeout in seconds.
       description: Description message explaining what this query does.
           This is used only for logging.
-      params: List of query parameters.
 
     Returns:
       A list of tuples representing result rows.
 
     Raises:
-      google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
+      google.cloud.exceptions.GoogleCloudError: On Google Cloud errors, e.g. if
+          the query job failed.
       BigQueryError: On BigQuery errors.
+      concurrent.futures.TimeoutError: If the job did not complete in
+          the given timeout.
+      AssertionError: On internal BigQuery client failures.
     """
     logging.info('Running BigQuery query: %s', description)
     logging.debug('Query: %s', query)
 
-    results = self._bigquery_client.run_sync_query(
-        query, query_parameters=params)
-    results.use_legacy_sql = False
-    results.default_dataset = self._dataset
-    results.timeout_ms = timeout_seconds * 1000
+    query_job_config = bigquery.QueryJobConfig(default_dataset=self._dataset)
+    query_job = self._bigquery_client.query(
+        query, job_config=query_job_config)
 
     start_time = time.time()
-    results.run()
-
-    if not results.complete:
-      raise BigQueryError(results.errors)
-
-    rows = _GetPaginatedResultRows(results)
-
+    iterator = query_job.result(timeout=timeout_seconds)
+    assert query_job.state == 'DONE'
+    rows = list(iterator)
+    if query_job.error_result:
+      raise BigQueryError(query_job.errors)
     end_time = time.time()
-
     logging.info('BigQuery query successfully finished in %.3fs; '
                  'processed %d bytes, got %d rows.', end_time - start_time,
-                 results.total_bytes_processed, len(rows))
+                 query_job.total_bytes_processed, len(rows))
     return rows
 
   def CopyTable(self, dst_table_name, *src_table_names):
@@ -132,6 +139,13 @@ class BigQueryWrapper(object):
     Args:
       dst_table_name: Name of the new table to create.
       *src_table_names: Names of tables to copy data from.
+
+    Raises:
+      google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
+      BigQueryError: If no table to copy.
+      concurrent.futures.TimeoutError: If the job did not complete in
+          the given timeout.
+      AssertionError: On internal BigQuery client failures.
     """
     if not src_table_names:
       raise BigQueryError('No table to copy from')
@@ -139,12 +153,13 @@ class BigQueryWrapper(object):
     src_tables = [self._dataset.table(t) for t in src_table_names]
     dst_table = self._dataset.table(dst_table_name,
                                     self.TableSchema(src_table_names[0]))
-    job_name = 'copy_into_%s_%s_%s' % (
-        self._dataset.name, dst_table_name,
+    job_id = 'copy_into_%s_%s_%s' % (
+        self._dataset.dataset_id, dst_table_name,
         datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f'))
-    # pylint: disable=star-args
-    job = self._bigquery_client.copy_table(job_name, dst_table, *src_tables)
-    self._StartAndWaitForJobCompletion(job)
+    job = self._bigquery_client.copy_table(src_tables, dst_table, job_id=job_id)
+    # Wait for the copy job to finish.
+    job.result()
+    assert job.state == 'DONE'
 
   def DeleteTable(self, table_name):
     """Delete a table.
@@ -153,7 +168,7 @@ class BigQueryWrapper(object):
       table_name: Name of the table to delete.
     """
     table = self._dataset.table(table_name)
-    table.delete()
+    self._bigquery_client.delete_table(table, not_found_ok=True)
 
   def PatchSchema(self, table_name, schema):
     """Patches the table schema for the given table.
@@ -162,8 +177,8 @@ class BigQueryWrapper(object):
       table_name: Table to update.
       schema: The new schema as a list of SchemaField.
     """
-    table = self._dataset.table(table_name)
-    table.patch(self._bigquery_client, schema=schema)
+    table_ref = self._dataset.table(table_name)
+    self._bigquery_client.update_table(table_ref, schema)
 
   def LoadEntries(self, table_name, schema, entries, job_name=None):
     """Loads entries into a table.
@@ -183,6 +198,10 @@ class BigQueryWrapper(object):
 
     Raises:
       google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
+      BigQueryError: GS bucket name is not provided or Bigquery errors.
+      concurrent.futures.TimeoutError: If the job did not complete in
+          the given timeout.
+      AssertionError: On internal BigQuery client failures.
     """
     if self._bucket is None:
       raise BigQueryError(
@@ -190,15 +209,18 @@ class BigQueryWrapper(object):
 
     if job_name is None:
       job_name = 'load_%s_%s_%s' % (
-          self._dataset.name, table_name,
+          self._dataset.dataset_id, table_name,
           datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f'))
-    json_path = 'loads/%s/%s/data.json' % (self._dataset.name, job_name)
-
+    json_path = 'loads/%s/%s/data.json' % (self._dataset.dataset_id, job_name)
     self._UploadEntriesToGs(entries, json_path)
     if self._ShouldPatchSchema(table_name, schema):
       self.PatchSchema(table_name, schema)
     job = self._CreateLoadJobFromGs(json_path, schema, table_name, job_name)
-    self._StartAndWaitForJobCompletion(job)
+    # Wait for the copy job to finish.
+    job.result()
+    assert job.state == 'DONE'
+    if job.error_result:
+      raise BigQueryError(job.errors)
 
   def ExportToStorage(self, table_name, destination_url, job_name=None):
     """Exports a table into Google Cloud Storage.
@@ -213,13 +235,21 @@ class BigQueryWrapper(object):
 
     Raises:
       google.cloud.exceptions.GoogleCloudError: On Google Cloud errors.
+      BigQueryError: On BigQuery errors.
+      concurrent.futures.TimeoutError: If the job did not complete in
+          the given timeout.
+      AssertionError: On internal BigQuery client failures.
     """
     if job_name is None:
       job_name = 'export_%s_%s_%s' % (
-          self._dataset.name, table_name,
+          self._dataset.dataset_id, table_name,
           datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f'))
     job = self._CreateExportJob(table_name, destination_url, job_name)
-    self._StartAndWaitForJobCompletion(job)
+    # Wait for the copy job to finish.
+    job.result()
+    assert job.state == 'DONE'
+    if job.error_result:
+      raise BigQueryError(job.errors)
 
   def _UploadEntriesToGs(self, entries, json_path):
     """Uploads entries to Google Cloud Storage as a newline-delimited JSON.
@@ -233,7 +263,7 @@ class BigQueryWrapper(object):
     logging.info('Uploading %d entries to GCS', len(entries))
     self._bucket.blob(json_path).upload_from_string(entries_json)
 
-  def _CreateLoadJobFromGs(self, json_path, schema, table_name, job_name):
+  def _CreateLoadJobFromGs(self, json_path, schema, table_name, job_id):
     """Creates a new load job that imports entries from Google Cloud Storage.
 
     Args:
@@ -241,18 +271,22 @@ class BigQueryWrapper(object):
           bucket root.
       schema: Schema of the table as a list of SchemaField.
       table_name: Name of a BigQuery table to insert new entries to.
-      job_name: Unique name of a load job.
+      job_id: Unique name of a load job.
 
     Returns:
-      google.cloud.bigquery.job.LoadTableFromStorageJob object.
+      google.cloud.bigquery.job.LoadJob object.
     """
     json_url = 'gs://%s/%s' % (self._bucket.name, json_path)
-    job = self._bigquery_client.load_table_from_storage(
-        job_name, self._dataset.table(table_name), json_url)
-    job.create_disposition = 'CREATE_IF_NEEDED'
-    job.write_disposition = 'WRITE_APPEND'
-    job.source_format = 'NEWLINE_DELIMITED_JSON'
-    job.schema = schema
+    job_config = bigquery.LoadJobConfig(
+        schema=schema,
+        create_disposition='CREATE_IF_NEEDED',
+        write_disposition='WRITE_APPEND',
+        source_format='NEWLINE_DELIMITED_JSON')
+    job = self._bigquery_client.load_table_from_uri(
+        json_url,
+        self._dataset.table(table_name),
+        job_id=job_id,
+        job_config=job_config)
     return job
 
   def _ShouldPatchSchema(self, table_name, schema):
@@ -277,48 +311,26 @@ class BigQueryWrapper(object):
         return True
     return False
 
-  def _CreateExportJob(self, table_name, url, job_name):
+  def _CreateExportJob(self, table_name, url, job_id):
     """Creates a new export job.
 
     Args:
       table_name: Table name.
       url: GS URL of the destination.
-      job_name: Unique name of a load job.
+      job_id: Unique name of a load job.
 
     Returns:
-      google.cloud.bigquery.job.ExtractTableToStorageJob object.
+      google.cloud.bigquery.job.ExtractJob object.
     """
-    job = self._bigquery_client.extract_table_to_storage(
-        job_name, self._dataset.table(table_name), url)
-    job.compression = 'GZIP'
-    job.destination_format = 'NEWLINE_DELIMITED_JSON'
+    job_config = bigquery.job.ExtractJobConfig(
+        compression='GZIP',
+        destination_format='NEWLINE_DELIMITED_JSON')
+    job = self._bigquery_client.extract_table(
+        self._dataset.table(table_name),
+        url,
+        job_id=job_id,
+        job_config=job_config)
     return job
-
-  def _StartAndWaitForJobCompletion(self, job):
-    """Starts a job and waits for it to finish.
-
-    Args:
-      job: google.cloud.bigquery.job._AsyncJob object.
-
-    Raises:
-      BigQueryError: On backend errors.
-    """
-    start_time = time.time()
-    job.begin()
-    logging.info('Job "%s" started.', job.name)
-
-    while True:
-      job.reload()
-      logging.debug('Job state: %s', job.state)
-      if job.state == 'DONE':
-        if job.error_result:
-          raise BigQueryError(job.errors)
-        break
-      time.sleep(1)
-
-    end_time = time.time()
-    logging.info('Job "%s" successfully finished in %.3fs.', job.name,
-                 end_time - start_time)
 
 
 def _SerializeToNewlineDelimitedJson(entries):
@@ -355,21 +367,3 @@ def _CustomEncoder(value):
     utc_datetime = value.astimezone(pytz.utc)
     return utc_datetime.strftime('%Y-%m-%d %H:%M:%S UTC')
   raise TypeError('Could not encode to JSON: %r' % value)
-
-
-def _GetPaginatedResultRows(results):
-  """Handles paginated results to build a list of all rows.
-
-  Args:
-    results: bigquery.QueryResults object.
-
-  Returns:
-    A list of query result rows.
-  """
-  rows = results.rows
-  page_token = results.page_token
-  while page_token:
-    rows_iter = results.fetch_data(page_token=page_token)
-    rows += list(rows_iter)
-    page_token = rows_iter.next_page_token
-  return rows

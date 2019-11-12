@@ -63,7 +63,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
         timezone=pytz.timezone('US/Pacific'))
     self.cidb_mock.assert_not_called()
     self.bigquery_mock.assert_called_once_with('bqproject')
-    self.bigquery_mock.return_value.dataset.assert_called_once_with(
+    self.bigquery_mock.return_value.get_dataset.assert_called_once_with(
         'somedataset')
     self.storage_mock.assert_called_once_with('gcsproject')
     self.storage_mock.return_value.bucket.assert_has_calls(
@@ -96,7 +96,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
         timezone=pytz.timezone('Asia/Tokyo'))
     self.cidb_mock.assert_not_called()
     self.bigquery_mock.assert_called_once_with('bqproject')
-    self.bigquery_mock.return_value.dataset.assert_called_once_with(
+    self.bigquery_mock.return_value.get_dataset.assert_called_once_with(
         'somedataset')
     self.storage_mock.assert_called_once_with('gcsproject')
     self.storage_mock.return_value.bucket.assert_has_calls(
@@ -124,7 +124,7 @@ class ArchiveBuilderFactoryTestCase(unittest.TestCase):
     self.mysql_mock.assert_not_called()
     self.cidb_mock.assert_called_once_with('/path/to/cidb_creds')
     self.bigquery_mock.assert_called_once_with('bqproject')
-    self.bigquery_mock.return_value.dataset.assert_called_once_with(
+    self.bigquery_mock.return_value.get_dataset.assert_called_once_with(
         'somedataset')
     self.storage_mock.assert_called_once_with('gcsproject')
     self.storage_mock.return_value.bucket.assert_has_calls(

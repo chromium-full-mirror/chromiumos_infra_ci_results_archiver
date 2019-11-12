@@ -50,7 +50,7 @@ def CreateBuilder(table_type, configs):
   table_spec = table_specs.GetTableSpec(table_type)
 
   bigquery_client = bigquery.Client(configs['bigquery']['project'])
-  dataset = bigquery_client.dataset(configs['bigquery']['dataset'])
+  dataset = bigquery_client.get_dataset(configs['bigquery']['dataset'])
   storage_client = storage.Client(configs['cloud_storage']['project'])
   temporary_bucket = storage_client.bucket(
       configs['cloud_storage']['temporary_bucket'])
@@ -85,10 +85,7 @@ def CreateBuilder(table_type, configs):
   else:
     dumper = None
 
-  checkpointer = checkpointer_lib.Checkpointer(
-      bucket=persistent_bucket,
-      dataset=dataset.name,
-      table_prefix=table_spec.table_prefix)
+  checkpointer = checkpointer_lib.Checkpointer()
 
   return archive_builder.ArchiveBuilder(
       table_type=table_type,

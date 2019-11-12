@@ -11,12 +11,12 @@ import collections
 import json
 
 from google.cloud import exceptions  # pylint: disable=import-error,no-name-in-module
-
+from google.cloud import datastore
 
 class Checkpointer(object):
   """Manages checkpoints.
 
-  A checkpoint is a JSON file on Google Cloud Storage containing various
+  A checkpoint is an entity in Google Cloud Datastore containing various
   information persisted between builder runs.
 
   The most important information in a checkpoint is "Next ID" which identifies
@@ -26,17 +26,14 @@ class Checkpointer(object):
   and on a next run it is read to continue processing subsequent entries.
   """
 
-  def __init__(self, bucket, dataset, table_prefix):
-    """Initializes the checkpointer object.
+  def __init__(self):
+    """Initializes the checkpointer object. """
 
-    Args:
-      bucket: google.cloud.storage.Bucket object.
-      dataset: BigQuery dataset name.
-      table_prefix: BigQuery table prefix.
-    """
-    self._bucket = bucket
-    path = 'checkpoints/checkpoint.%s.%s.json' % (dataset, table_prefix)
-    self._blob = bucket.blob(path)
+    #TODO: add kind and entity name to config file.
+    self.client = datastore.Client('google.com:chromeos-lab')
+    self.kind = 'chromeos-ci-results'
+    self.entity = 'check-pointer'
+
 
   def Load(self):
     """Loads a checkpoint.
@@ -47,29 +44,43 @@ class Checkpointer(object):
     Raises:
       CheckpointError: When the checkpoint is corrupted or not found.
     """
-    try:
-      content = self._blob.download_as_string()
-    except exceptions.NotFound:
-      url = 'gs://%s/%s' % (self._blob.bucket.name, self._blob.name)
+
+    key = self.client.key(self.kind, self.entity)
+    content = self.client.get(key)
+    if not content:
       raise CheckpointError(
-          'Checkpoint file is not found at %(url)s. '
-          'If this is the first run, please create one manually with '
-          'gsutil command.' % {'url': url})
-    data = json.loads(content)
+          'Checkpoint entity is empty. If this is the first run, '
+          'please create one under kind %s with name '
+          '%s manually in Google Cloud Console.' %
+          (self.kind, self.entity))
     checkpoint = Checkpoint(
-        next_id=data.get('next_id'),
-        last_start_time=data.get('last_start_time'))
+        next_id=int(content.get('next_id')),
+        last_start_time=float(content.get('last_start_time')))
     if not checkpoint.next_id:
-      raise CheckpointError('Checkpoint file is corrupted: next_id is not set.')
+      raise CheckpointError('Checkpoint entity is corrupted: next_id is not set.')
     return checkpoint
 
   def Save(self, checkpoint):
     """Saves a checkpoint.
 
     Args:
-      checkpoint: Checkpoint object to be saved to the checkpoint JSON file.
+      checkpoint: Checkpoint object to be saved as an entity in datastore.
+
+    Raises:
+      CheckpointError: When the checkpoint is not found.
     """
-    self._blob.upload_from_string(json.dumps(checkpoint._asdict()))
+    with self.client.transaction():
+      key = self.client.key(self.kind, self.entity)
+      content = self.client.get(key)
+      if not content:
+        raise CheckpointError(
+          'Checkpoint entity is empty. If this is the first run, '
+          'please create one under kind %s with name '
+          '%s manually in Google Cloud Console.' %
+          (self.kind, self.entity))
+      content['next_id'] = str(checkpoint.next_id)
+      content['last_start_time'] = str(checkpoint.last_start_time)
+      self.client.put(content)
 
 
 # Represents a checkpoint.
