@@ -20,6 +20,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import base64
 import contextlib
 import datetime
 import logging
@@ -32,6 +33,7 @@ from apscheduler.schedulers import blocking as blocking_scheduler
 from apscheduler.triggers import interval as interval_triggers
 from chromite.lib import metrics
 from chromite.lib import ts_mon_config
+from google.cloud import kms_v1
 import subprocess32
 
 from ci_results_archiver import archive_builder_factory
@@ -191,6 +193,21 @@ def _ParseArgs():
   return options
 
 
+def _decrypt(kms_client, creds, config):
+  """_decrypt deciphers the credentials stored in base64 string."""
+
+  results = {}
+  project_id = config['project']
+  location_id = config['location_id']
+  key_ring_id = config['key_ring_id']
+  crypto_key_id = config['crypto_key_id']
+  name = kms_client.crypto_key_path_path(project_id, location_id, key_ring_id,
+                                         crypto_key_id)
+  for k in creds.keys():
+    results[k] = kms_client.decrypt(name, base64.b64decode(creds[k])).plaintext
+  return results
+
+
 def main():
   """The entry point."""
   # Install SIGTERM handler so we can clean up.
@@ -198,7 +215,10 @@ def main():
 
   options = _ParseArgs()
   configs = config_loader.Load(options.config_path)
-
+  credentials = _decrypt(kms_v1.KeyManagementServiceClient(),
+                         configs['databases']['tko']['credentials'],
+                         configs['cloud_kms'])
+  configs['databases']['tko']['credentials'] = credentials
   process_name = options.table_type.value if options.table_type else 'scheduler'
   _SetupLogging(verbose=options.verbose, process_name=process_name)
 

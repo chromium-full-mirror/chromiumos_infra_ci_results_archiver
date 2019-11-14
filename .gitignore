@@ -10,3 +10,6 @@
 
 /.cache/
 /.coverage
+/chromite/*
+/cmd/*
+/service_account.json
