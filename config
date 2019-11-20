@@ -22,7 +22,7 @@ databases:
 
 bigquery:
   project: google.com:chromeos-lab
-  dataset: ci_results_dev
+  dataset: ci_results
 
 
 cloud_storage:

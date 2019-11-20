@@ -6,10 +6,10 @@
 *.orig
 *.rej
 *.swp
+*.json
 .DS_Store
 
 /.cache/
 /.coverage
 /chromite/*
 /cmd/*
-/service_account.json

@@ -24,7 +24,7 @@ spec:
         - name: PYTHONPATH
           value: "/ci_results_archiver"
         - name: GOOGLE_APPLICATION_CREDENTIALS
-          value: "/secrets/main-service-account-key/service_account.json"
+          value: "/secrets/service-account-keys/service_account.json"
         command: ["python"]
         args: [
           "/ci_results_archiver/ci_results_archiver/main.py",
@@ -32,16 +32,22 @@ spec:
           "--run-soon",
         ]
         volumeMounts:
-        - name: main-service-account-key
-          mountPath: '/secrets/main-service-account-key'
+        - name: service-account-keys
+          mountPath: '/secrets/service-account-keys'
           readOnly: true
         - name: mysql-config
           mountPath: '/mysql-config'
           readOnly: true
+        - name: tsmon-config
+          mountPath: '/etc/chrome-infra'
+          readOnly: true
       volumes:
-      - name: main-service-account-key
+      - name: service-account-keys
         secret:
-          secretName: main-service-account-key
+          secretName: service-account-keys
       - name: mysql-config
         secret:
           secretName: mysql-config
+      - name: tsmon-config
+        secret:
+          secretName: tsmon-config
