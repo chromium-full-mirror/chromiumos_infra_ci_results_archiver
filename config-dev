@@ -1,0 +1,44 @@
+scheduler:
+  interval: 20m
+  timeout: 19m30s
+
+
+tables:
+  tko_jobs:
+    max_entries: 50000
+    grace_period:
+      capacity: 500
+
+
+databases:
+  tko:
+    credentials:
+      hostname: CiQAydU+FO46Of0Jf0KtH8JTyqiDhWYY6wEpEpoJ6uK/KyOEhDQSNwBlYe8kUDbhNd7TD5AxUlfN8/GzQDv3ntIc2Ai02dl1uKm58GtNPv0Xus5NfHnVJFEqBLQ6HEg=
+      username: CiQAydU+FAH9iIUoqTIkCWgal5ejpO/uzgvYyr79JRfl7X+HcgASOQBlYe8kFkTO4y/5yxvL0lXjo5okpV8+mxG2wNRgObmdH4IyKRIHDjA7d7YiQFuVk1H0JzNq9/V4PQ==
+      password: CiQAydU+FKr4lNBO/XJul3yw97uN1MHIEqZ0XcUUG0DAy1Ay+d4SMABlYe8k/ySG68uJl4nDXvlTYdUTUW2/iXyKi6uN1t500eGJrpK0v2I59WRaCIVG/g==
+      database: CiQAydU+FOKagtDvyaVpiqIybj3ObNu9OSW9ccTtlqZurNH7my0SPQBlYe8knMylHf6IZzkb2DQXJ+acFRru7/MNB/4oJ8P6pnkI7iZmQwT8ljZ/8dItQokpPNQfFnpXjOIyKyU=
+    timezone: US/Pacific
+
+
+bigquery:
+  project: google.com:chromeos-lab
+  dataset: ci_results_dev
+
+
+cloud_storage:
+  project: google.com:chromeos-lab
+  persistent_bucket: chromeos-ci-results-dev
+  temporary_bucket: chromeos-ci-results-tmp
+
+
+cloud_kms:
+  project: cros-test-platform-kms
+  location_id: global
+  key_ring_id: ci_results_archiver
+  crypto_key_id: mysql_wrapper
+
+
+cloud_datastore:
+  project: google.com:chromeos-lab
+  kind: chromeos-ci-results-dev
+  entity: check-pointer

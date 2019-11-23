@@ -57,11 +57,11 @@ load-libs: .load-chromite
 run-local:
 	export GOOGLE_APPLICATION_CREDENTIALS=$(local_dir)/service_account.json; \
 	export PYTHONPATH=$(local_dir); \
-	python ci_results_archiver/main.py -c config --one-shot --table-type tko_jobs
+	python ci_results_archiver/main.py -c config-dev --one-shot --table-type tko_jobs
 
 # Run unit test.
 unit-test:
-	export GOOGLE_APPLICATION_CREDENTIALS=$(local_dir)/service_account.json; \
+	export GOOGLE_APPLICATION_CREDENTIALS=$(local_dir)/ci_results_archiver/test/dummy-service-account.json; \
 	python -m pytest ./ci_results_archiver/
 
 # Build docker image locally.
