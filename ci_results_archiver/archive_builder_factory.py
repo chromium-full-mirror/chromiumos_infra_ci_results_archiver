@@ -85,7 +85,11 @@ def CreateBuilder(table_type, configs):
   else:
     dumper = None
 
-  checkpointer = checkpointer_lib.Checkpointer()
+  checkpointer = checkpointer_lib.Checkpointer(
+      project=configs['cloud_datastore']['project'],
+      kind=configs['cloud_datastore']['kind'],
+      entity=configs['cloud_datastore']['entity']
+  )
 
   return archive_builder.ArchiveBuilder(
       table_type=table_type,

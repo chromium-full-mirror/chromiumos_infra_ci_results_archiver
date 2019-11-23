@@ -46,3 +46,8 @@ cloud_storage:
   project: gcsproject
   persistent_bucket: goodbucket
   temporary_bucket: somebucket
+
+cloud_datastore:
+  project: someproject
+  kind: somekind
+  entity: someentity

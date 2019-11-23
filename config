@@ -36,3 +36,9 @@ cloud_kms:
   location_id: global
   key_ring_id: ci_results_archiver
   crypto_key_id: mysql_wrapper
+
+
+cloud_datastore:
+  project: google.com:chromeos-lab
+  kind: chromeos-ci-results
+  entity: check-pointer

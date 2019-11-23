@@ -26,13 +26,12 @@ class Checkpointer(object):
   and on a next run it is read to continue processing subsequent entries.
   """
 
-  def __init__(self):
+  def __init__(self, project, kind, entity):
     """Initializes the checkpointer object. """
 
-    #TODO: add kind and entity name to config file.
-    self.client = datastore.Client('google.com:chromeos-lab')
-    self.kind = 'chromeos-ci-results'
-    self.entity = 'check-pointer'
+    self.client = datastore.Client(project)
+    self.kind = kind
+    self.entity = entity
 
 
   def Load(self):
