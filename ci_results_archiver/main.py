@@ -179,6 +179,10 @@ def _ParseArgs():
       metavar='TYPE',
       help='If this option is set, the program builds tables of the specified '
       'type and exits.')
+  parser.add_argument(
+      '--decrypt-creds', action='store_true', help='Decipher the credentials '
+      'stored in the config via Cloud KMS. Otherwise, use the credentials field '
+      'in the config verbatim.')
   options = parser.parse_args()
 
   if options.one_shot:
@@ -215,10 +219,11 @@ def main():
 
   options = _ParseArgs()
   configs = config_loader.Load(options.config_path)
-  credentials = _decrypt(kms_v1.KeyManagementServiceClient(),
-                         configs['databases']['tko']['credentials'],
-                         configs['cloud_kms'])
-  configs['databases']['tko']['credentials'] = credentials
+  if options.decrypt_creds:
+    credentials = _decrypt(kms_v1.KeyManagementServiceClient(),
+                           configs['databases']['tko']['credentials'],
+                           configs['cloud_kms'])
+    configs['databases']['tko']['credentials'] = credentials
   process_name = options.table_type.value if options.table_type else 'scheduler'
   _SetupLogging(verbose=options.verbose, process_name=process_name)
 

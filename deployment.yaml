@@ -30,6 +30,7 @@ spec:
           "/ci_results_archiver/ci_results_archiver/main.py",
           "-c=/mysql-config/config",
           "--run-soon",
+          "--decrypt-creds",
         ]
         volumeMounts:
         - name: service-account-keys
