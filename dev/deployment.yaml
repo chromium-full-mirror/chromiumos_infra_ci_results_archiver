@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: ci-results-archiver
-        image: gcr.io/google.com/chromeos-lab/ci_results_archiver@sha256:2af96dcca4eda8ed26a3322bb4da59055903f1d3ff2a94d999fe9e2817a7574d
+        image: gcr.io/google.com/chromeos-lab/ci_results_archiver@sha256:c8fbf87478b7632c13e358736455cf8dc83473307a68d9177774bcd0b75b8295
         env:
         - name: PYTHONPATH
           value: "/ci_results_archiver"
@@ -39,9 +39,6 @@ spec:
         - name: mysql-config
           mountPath: '/mysql-config'
           readOnly: true
-        - name: tsmon-config
-          mountPath: '/etc/chrome-infra'
-          readOnly: true
       volumes:
       - name: service-account-keys
         secret:
@@ -49,6 +46,4 @@ spec:
       - name: mysql-config
         secret:
           secretName: mysql-config
-      - name: tsmon-config
-        secret:
-          secretName: tsmon-config
+
