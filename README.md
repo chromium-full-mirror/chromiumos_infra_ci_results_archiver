@@ -4,7 +4,7 @@
 
 1. Install mysql client:
 
-        sudo apt-get install default-libmysqlclient-dev
+        sudo apt-get install default-libmysqlclient-dev libssl-dev
 
 1. Install python libs:
 

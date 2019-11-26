@@ -8,7 +8,8 @@ WORKDIR /ci_results_archiver
 
 RUN apt-get update && apt-get install -y \
     python-pip \
-    default-libmysqlclient-dev
+    default-libmysqlclient-dev \
+    libssl-dev
 
 RUN pip install apscheduler gcloud \
                 google-cloud-bigquery \

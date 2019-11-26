@@ -34,7 +34,16 @@ load-tsmon-credentials:
 
 .load-chromite:
 	if [ ! -d ./chromite ]; then \
-		git clone https://chromium.googlesource.com/chromiumos/chromite ; \
+		git init chromite; \
+		cd chromite; \
+		git remote add -f origin https://chromium.googlesource.com/chromiumos/chromite; \
+		git config core.sparseCheckout true; \
+		echo "lib/" >> .git/info/sparse-checkout; \
+		echo "utils/" >> .git/info/sparse-checkout; \
+		echo "third_party/" >> .git/info/sparse-checkout; \
+		echo "/__init__.py" >> .git/info/sparse-checkout; \
+		echo "!*test.py" >> .git/info/sparse-checkout; \
+		git pull --depth 1 origin master; \
 	fi
 
 .setup-cmddir: .create-cmddir .load-chromite
