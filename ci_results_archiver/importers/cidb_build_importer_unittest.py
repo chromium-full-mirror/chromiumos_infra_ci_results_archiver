@@ -55,7 +55,7 @@ class CidbBuildImporterTestCase(unittest.TestCase):
             'important': True,
             'buildbucket_id': 'someid',
             'deadline': datetime.datetime.fromtimestamp(1234567900, pytz.utc),
-            'branch': 'master',
+            'branch': 'main',
         },
         {
             'cidb_build_id': 1,
@@ -70,7 +70,7 @@ class CidbBuildImporterTestCase(unittest.TestCase):
             'important': True,
             'buildbucket_id': 'someid',
             'deadline': datetime.datetime.fromtimestamp(1234567900, pytz.utc),
-            'branch': 'master',
+            'branch': 'main',
         },
     ], entries)
     self.assertEquals([], modify_ids)
@@ -126,7 +126,7 @@ def _CreateCidbBuildEntry(
     important=True,
     buildbucket_id='someid',
     timeout_seconds=10,
-    branch='master'):
+    branch='main'):
   """Creates args for FakeCIDBConnection.InsertBuild()."""
   # pylint: disable=unused-argument
   return dict(locals())
