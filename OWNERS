@@ -1,5 +1,4 @@
-jkop@chromium.org
-linxinan@chromium.org
+include chromiumos/chromite:/OWNERS.testplatform
+
+# Original author
 nya@chromium.org
-pprabhu@chromium.org
-zamorzaev@chromium.org
