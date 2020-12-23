@@ -43,7 +43,7 @@ load-tsmon-credentials:
 		echo "third_party/" >> .git/info/sparse-checkout; \
 		echo "/__init__.py" >> .git/info/sparse-checkout; \
 		echo "!*test.py" >> .git/info/sparse-checkout; \
-		git pull --depth 1 origin master; \
+		git pull --depth 1 origin main; \
 	fi
 
 .setup-cmddir: .create-cmddir .load-chromite
