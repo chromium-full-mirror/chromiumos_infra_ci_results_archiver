@@ -17,7 +17,7 @@ databases:
       username: CiQAydU+FAH9iIUoqTIkCWgal5ejpO/uzgvYyr79JRfl7X+HcgASOQBlYe8kFkTO4y/5yxvL0lXjo5okpV8+mxG2wNRgObmdH4IyKRIHDjA7d7YiQFuVk1H0JzNq9/V4PQ==
       password: CiQAydU+FKr4lNBO/XJul3yw97uN1MHIEqZ0XcUUG0DAy1Ay+d4SMABlYe8k/ySG68uJl4nDXvlTYdUTUW2/iXyKi6uN1t500eGJrpK0v2I59WRaCIVG/g==
       database: CiQAydU+FOKagtDvyaVpiqIybj3ObNu9OSW9ccTtlqZurNH7my0SPQBlYe8knMylHf6IZzkb2DQXJ+acFRru7/MNB/4oJ8P6pnkI7iZmQwT8ljZ/8dItQokpPNQfFnpXjOIyKyU=
-    timezone: US/Pacific
+    timezone: UTC
 
 
 bigquery:
