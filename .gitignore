@@ -13,3 +13,6 @@
 /.coverage
 /chromite/*
 /cmd/*
+
+chromite/
+.idea/

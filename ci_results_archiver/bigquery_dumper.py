@@ -32,6 +32,6 @@ class BigQueryDumper(object):
     if not table_suffixes:
       return
     for table_suffix in sorted(table_suffixes):
-      destination_url = 'gs://%s/archives/%s%s.json.gz' % (
+      destination_url = 'gs://%s/archives/%s%s-*.json.gz' % (
           self._bucket_name, self._table_spec.table_prefix, table_suffix)
       self._bigquery_tables.ExportToStorage(table_suffix, destination_url)
