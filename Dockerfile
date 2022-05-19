@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
     libssl-dev
 
-RUN pip install apscheduler gcloud \
+RUN pip install apscheduler google-cloud \
                 google-cloud-bigquery \
                 google-cloud-datastore \
                 google-cloud-kms \

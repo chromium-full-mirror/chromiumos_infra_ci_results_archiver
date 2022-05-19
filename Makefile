@@ -80,7 +80,7 @@ local-build: .setup-cmddir
 
 # Build docker image on GCP.
 cloud-build: .setup-cmddir
-	gcloud builds submit \
+	gcloud builds submit --timeout=15m5s\
 		--tag gcr.io/$(ORG_PREFIX)/$(PROJECT)/ci_results_archiver \
 		--project $(ORG_PREFIX):$(PROJECT) \
 		$(cmddir)
