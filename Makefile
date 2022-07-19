@@ -33,19 +33,12 @@ load-tsmon-credentials:
 	mkdir -p $(cmddir)
 
 .load-chromite:
-	if [ ! -d ./chromite ]; then \
-		git init chromite; \
-		cd chromite; \
-		git remote add -f origin https://chromium.googlesource.com/chromiumos/chromite; \
-		git config core.sparseCheckout true; \
-		echo "lib/" >> .git/info/sparse-checkout; \
-		echo "utils/" >> .git/info/sparse-checkout; \
-		echo "third_party/" >> .git/info/sparse-checkout; \
-		echo "/__init__.py" >> .git/info/sparse-checkout; \
-		echo "!*test.py" >> .git/info/sparse-checkout; \
-		git pull --depth 1 origin main; \
-	fi
-
+	rm -rf ./chromite/
+	mkdir -p ./tmp/
+	gsutil cp gs://elgoog_com_chromeos-lab_cloudbuild/source/1574798356.806704-3756f96d89f44bea9808e268a6a08f74.tgz ./tmp/ 
+	tar -xzf ./tmp/1574798356.806704-3756f96d89f44bea9808e268a6a08f74.tgz -C tmp/
+	mv ./tmp/chromite/ .
+	rm -rf tmp/
 .setup-cmddir: .create-cmddir .load-chromite
 	cp Dockerfile $(cmddir)/
 	cp -r ci_results_archiver $(cmddir)/
@@ -77,6 +70,9 @@ unit-test:
 local-build: .setup-cmddir
 	sudo docker build -t gcr.io/$(ORG_PREFIX)/$(PROJECT)/ci_results_archiver \
 		-f $(cmddir)/Dockerfile $(cmddir)
+
+push-local:
+	docker push --all-tags gcr.io/google.com/chromeos-lab/ci_results_archiver
 
 # Build docker image on GCP.
 cloud-build: .setup-cmddir
